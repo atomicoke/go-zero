@@ -42,6 +42,10 @@ var (
 
 // Execute executes the given command
 func Execute() {
+	rootCmd.Version = fmt.Sprintf(
+		"%s - %s %s/%s", version.BuildVersion, version.BuildTime,
+		runtime.GOOS, runtime.GOARCH)
+
 	os.Args = supportGoStdFlag(os.Args)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(aurora.Red(err.Error()))
