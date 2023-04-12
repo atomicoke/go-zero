@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"github.com/zeromicro/go-zero/tools/goctl/model/sql/parser"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/template"
 	"github.com/zeromicro/go-zero/tools/goctl/util"
 	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
@@ -19,6 +20,8 @@ func genTypes(table Table, methods string, withCache bool) (string, error) {
 		return "", err
 	}
 
+	filedFull := parser.ConvertFieldToFull(fields)
+
 	output, err := util.With("types").
 		Parse(text).
 		Execute(map[string]any{
@@ -27,6 +30,7 @@ func genTypes(table Table, methods string, withCache bool) (string, error) {
 			"upperStartCamelObject": table.Name.ToCamel(),
 			"lowerStartCamelObject": stringx.From(table.Name.ToCamel()).Untitle(),
 			"fields":                fieldsString,
+			"tableFields":           filedFull,
 			"data":                  table,
 		})
 	if err != nil {

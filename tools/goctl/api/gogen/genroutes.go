@@ -1,6 +1,8 @@
 package gogen
 
 import (
+	"dm.com/toolx/arr"
+	"dm.com/toolx/fn/strfn"
 	"fmt"
 	"os"
 	"path"
@@ -87,8 +89,9 @@ func genRoutes(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec) error
 	}
 
 	var hasTimeout bool
+	var imports = arr.Slice(api.Imports)
 	gt := template.Must(template.New("groupTemplate").Parse(templateText))
-	for _, g := range groups {
+	for gk, g := range groups {
 		var gbuilder strings.Builder
 		gbuilder.WriteString("[]rest.Route{")
 		for _, r := range g.routes {
@@ -96,9 +99,10 @@ func genRoutes(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec) error
 		{
 			Method:  %s,
 			Path:    "%s",
-			Handler: %s,
+			// %s
+			Handler: %s, // %s
 		},`,
-				r.method, r.path, r.handler)
+				r.method, r.path, strfn.Trim(imports.Get(gk, spec.Import{}).Value, "\""), r.handler, g.prefix+"/"+strings.TrimPrefix(r.path, "/"))
 		}
 
 		var jwt string

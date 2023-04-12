@@ -1,8 +1,11 @@
 package spec
 
 import (
+	"dm.com/toolx/arr"
+	"dm.com/toolx/fn/anyfn"
 	"errors"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/stringx"
@@ -18,6 +21,8 @@ const (
 )
 
 var definedKeys = []string{bodyTagKey, formTagKey, pathTagKey, headerTagKey}
+
+var tagReg = regexp.MustCompile(`(\w+):"(.*?)"`)
 
 func (s Service) JoinPrefix() Service {
 	var groups []Group
@@ -106,7 +111,16 @@ func (m Member) GetPropertyName() (string, error) {
 
 // GetComment returns comment value of Member
 func (m Member) GetComment() string {
-	return strings.TrimSpace(m.Comment)
+	var mp = arr.NewMapX[string, string]()
+	var all = tagReg.FindAllStringSubmatch(m.Tag, -1)
+
+	for _, v := range all {
+		mp.Set(v[1], v[2])
+	}
+
+	var comment = strings.TrimSpace(m.Comment)
+
+	return anyfn.Or(comment, mp.Get("label", ""))
 }
 
 // IsBodyMember returns true if contains json tag

@@ -1,6 +1,7 @@
 package gogen
 
 import (
+	"dm.com/toolx/arr"
 	_ "embed"
 	"fmt"
 	"path"
@@ -70,6 +71,9 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 			"responseType": responseString,
 			"returnString": returnString,
 			"request":      requestString,
+			"route":        arr.NewMap(group.Annotation.Properties).Get("prefix", "") + route.Path,
+			"title":        arr.NewMap(route.AtDoc.Properties).Get("summary", ""),
+			"method":       route.Method,
 		},
 	})
 }
