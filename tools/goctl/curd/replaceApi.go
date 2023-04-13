@@ -17,7 +17,7 @@ import (
 
 const prefixKey = "curdPrefix"
 
-func replaceApi(output string, apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) error {
+func replaceApi(output string, apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
 	var (
 		prefix string
 		desc   string
@@ -31,24 +31,37 @@ func replaceApi(output string, apiSpec *spec.ApiSpec, cfg *config.Config, table 
 	desc = strings.Trim(apiSpec.Info.Properties["desc"], "\"")
 	prefix, err := utilformat.FileNamingFormat(cfg.NamingFormat, prefix)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	group, shouldAppend := findServiceGroup(apiSpec)
-	if err := addApiAndType(prefix, desc, table, group, apiSpec); err != nil {
-		return err
+	group := findServiceGroup(apiSpec)
+	group, err = addApiAndType(prefix, desc, table, group, apiSpec)
+	if err != nil {
+		return nil, err
 	}
-	if shouldAppend {
+	return replaceGroup(group, apiSpec), nil
+}
+
+func replaceGroup(group *spec.Group, apiSpec *spec.ApiSpec) *spec.ApiSpec {
+	var find = false
+	for i := range apiSpec.Service.Groups {
+		g := apiSpec.Service.Groups[i]
+		if g.GetAnnotation(category) == "true" {
+			apiSpec.Service.Groups[i].Routes = group.Routes
+			find = true
+		}
+	}
+	if !find {
 		apiSpec.Service.Groups = append(apiSpec.Service.Groups, *group)
 	}
-	return nil
+	return apiSpec
 }
 
 var mapJsonTag = func(name string, comment string) string {
 	return fmt.Sprintf("`label:\"%s\" json:\"%s\"`", comment, strcase.ToLowerCamel(name))
 }
 
-func addApiAndType(prefix string, desc string, t *model.Table, group *spec.Group, apiSpec *spec.ApiSpec) error {
+func addApiAndType(prefix string, desc string, t *model.Table, group *spec.Group, apiSpec *spec.ApiSpec) (*spec.Group, error) {
 	var (
 		reqType         spec.DefineStruct
 		respType        spec.DefineStruct
@@ -61,7 +74,7 @@ func addApiAndType(prefix string, desc string, t *model.Table, group *spec.Group
 	})
 	newMembers, pk, err := mapColToMember(t, mapJsonTag, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if reqType, ok = types[addTypeReqName]; !ok {
@@ -90,7 +103,7 @@ func addApiAndType(prefix string, desc string, t *model.Table, group *spec.Group
 
 	mergeRouters(group, buildRoute(prefix, "post", "add", reqType, respType, "添加 "+desc))
 
-	return nil
+	return group, nil
 }
 
 func mergeRouters(group *spec.Group, router spec.Route) {
@@ -112,9 +125,9 @@ func mergeMembers(reqType spec.DefineStruct, newMembers []spec.Member) {
 	for i := range newMembers {
 		member := newMembers[i]
 		if prevMember, ok := prevMemberMap[member.Name]; ok {
-			member.Tag = prevMember.Tag
-			member.Comment = prevMember.Comment
-			member.Docs = prevMember.Docs
+			newMembers[i].Tag = prevMember.Tag
+			newMembers[i].Comment = prevMember.Comment
+			newMembers[i].Docs = prevMember.Docs
 		}
 	}
 	reqType.Members = newMembers
@@ -154,10 +167,9 @@ func buildRoute(prefix string, method string, action string, reqType spec.Define
 	}
 }
 
-func findServiceGroup(apiSpec *spec.ApiSpec) (*spec.Group, bool) {
+func findServiceGroup(apiSpec *spec.ApiSpec) *spec.Group {
 	var (
-		group        *spec.Group
-		shouldAppend = false
+		group *spec.Group
 	)
 
 	arr.Slice(apiSpec.Service.Groups).Find(func(g spec.Group) bool {
@@ -173,7 +185,6 @@ func findServiceGroup(apiSpec *spec.ApiSpec) (*spec.Group, bool) {
 			}, apiSpec.Service.Groups[0].Annotation.Properties)},
 			Routes: []spec.Route{},
 		}
-		shouldAppend = true
 	}
-	return group, shouldAppend
+	return group
 }

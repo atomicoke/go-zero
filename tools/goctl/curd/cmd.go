@@ -81,7 +81,7 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 		return err
 	}
 
-	if err := replaceApi(apiFile, apiSpec, cfg, tableInfo); err != nil {
+	if apiSpec, err = replaceApi(apiFile, apiSpec, cfg, tableInfo); err != nil {
 		return err
 	}
 	fmt.Println(apiSpecToString(apiSpec))
