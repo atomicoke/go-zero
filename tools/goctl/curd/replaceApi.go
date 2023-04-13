@@ -150,12 +150,31 @@ func mapColToMember(t *model.Table, mapTag func(name string, comment string) str
 		members = append(members, spec.Member{
 			Name: field.Name.ToCamel(),
 			Type: spec.PrimitiveType{
-				RawName: field.DataType,
+				RawName: maptype(field.DataType),
 			},
 			Tag: mapTag(field.Name.Source(), field.Comment),
 		})
 	}
 	return members, &table.PrimaryKey, nil
+}
+
+func maptype(dataType string) string {
+	switch dataType {
+	case "time.Time":
+		return "string"
+	case "sql.NullTime":
+		return "string"
+	case "sql.NullInt64":
+		return "int64"
+	case "sql.NullFloat64":
+		return "float64"
+	case "sql.NullBool":
+		return "bool"
+	case "sql.NullString":
+		return "string"
+	default:
+		return dataType
+	}
 }
 
 func buildRoute(prefix string, method string, action string, reqType spec.DefineStruct, respType spec.DefineStruct, desc string) spec.Route {
