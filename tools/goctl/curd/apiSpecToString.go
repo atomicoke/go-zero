@@ -4,11 +4,26 @@ import (
 	"dm.com/toolx/arr"
 	"fmt"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
+	"sort"
 	"strings"
 )
 
 var (
-	groupKey = []string{"jwt", "group", "prefix", "middleware", "curd"}
+	groupKey      = []string{"jwt", "group", "prefix", "middleware", "curd"}
+	sortServerKey = map[string]int{
+		"jwt":        0,
+		"group":      1,
+		"prefix":     2,
+		"middleware": 3,
+		"curd":       4,
+	}
+	sortInfoKey = map[string]int{
+		"title":      0,
+		"desc":       1,
+		"author":     2,
+		"email":      3,
+		"curdPrefix": 4,
+	}
 )
 
 func apiSpecToString(apiSpec *spec.ApiSpec) string {
@@ -66,7 +81,7 @@ func writeInfo(sb *strings.Builder, info spec.Info) {
 		return
 	}
 	sb.WriteString("info (\n")
-	writeAnnotation(sb, info.Properties)
+	writeAnnotation2(sb, info.Properties, sortInfoKey)
 	sb.WriteString(")\n")
 }
 
@@ -156,7 +171,7 @@ func writeServer(sb *strings.Builder, group spec.Group) {
 		return
 	}
 	sb.WriteString("@server (\n")
-	writeAnnotation2(sb, group.Annotation.Properties)
+	writeAnnotation2(sb, group.Annotation.Properties, sortServerKey)
 	sb.WriteString(")\n")
 }
 
@@ -182,9 +197,17 @@ func writeAnnotation(sb *strings.Builder, p map[string]string) {
 	}
 }
 
-func writeAnnotation2(sb *strings.Builder, p map[string]string) {
-	for k, v := range p {
-		sb.WriteString(fmt.Sprintf("\t%s: %s\n", k, v))
+func writeAnnotation2(sb *strings.Builder, p map[string]string, sortServerKey map[string]int) {
+	//sort map
+	var keys []string
+	for k := range p {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return sortServerKey[keys[i]] < sortServerKey[keys[j]]
+	})
+	for _, k := range keys {
+		sb.WriteString(fmt.Sprintf("\t%s: %s\n", k, p[k]))
 	}
 }
 
