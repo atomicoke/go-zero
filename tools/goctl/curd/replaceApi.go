@@ -78,17 +78,18 @@ func addApiAndType(prefix string, desc string, t *model.Table, group *spec.Group
 	}
 
 	if reqType, ok = types[addTypeReqName]; !ok {
-		apiSpec.Types = append(apiSpec.Types, spec.DefineStruct{
+		reqType = spec.DefineStruct{
 			RawName: addTypeReqName,
 			Members: newMembers,
 			Docs:    []string{fmt.Sprintf("add %s request", desc)},
-		})
+		}
+		apiSpec.Types = append(apiSpec.Types, reqType)
 	} else {
 		mergeMembers(reqType, newMembers)
 	}
 
 	if respType, ok = types[addTypeRespName]; !ok {
-		apiSpec.Types = append(apiSpec.Types, spec.DefineStruct{
+		respType = spec.DefineStruct{
 			RawName: addTypeRespName,
 			Members: []spec.Member{
 				{
@@ -98,7 +99,8 @@ func addApiAndType(prefix string, desc string, t *model.Table, group *spec.Group
 				},
 			},
 			Docs: []string{fmt.Sprintf("add %s response", desc)},
-		})
+		}
+		apiSpec.Types = append(apiSpec.Types, respType)
 	}
 
 	mergeRouters(group, buildRoute(prefix, "post", "add", reqType, respType, "添加 "+desc))
@@ -157,7 +159,7 @@ func mapColToMember(t *model.Table, mapTag func(name string, comment string) str
 }
 
 func buildRoute(prefix string, method string, action string, reqType spec.DefineStruct, respType spec.DefineStruct, desc string) spec.Route {
-	return spec.Route{
+	route := spec.Route{
 		Method:       method,
 		Path:         "/" + action,
 		Handler:      stringx.From(action).Title() + stringx.From(prefix).Title() + "Handler",
@@ -165,6 +167,7 @@ func buildRoute(prefix string, method string, action string, reqType spec.Define
 		RequestType:  reqType,
 		ResponseType: respType,
 	}
+	return route
 }
 
 func findServiceGroup(apiSpec *spec.ApiSpec) *spec.Group {
