@@ -3,6 +3,7 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
+	"github.com/zeromicro/go-zero/tools/goctl/curd"
 	"os"
 	"runtime"
 	"strings"
@@ -118,6 +119,7 @@ func init() {
 	rootCmd.SetUsageTemplate(usageTpl)
 	rootCmd.AddCommand(api.Cmd, bug.Cmd, docker.Cmd, kube.Cmd, env.Cmd, gateway.Cmd, model.Cmd)
 	rootCmd.AddCommand(migrate.Cmd, quickstart.Cmd, rpc.Cmd, tpl.Cmd, upgrade.Cmd)
+	rootCmd.AddCommand(curd.Cmd)
 	rootCmd.Command.AddCommand(cobracompletefig.CreateCompletionSpecCommand())
 	rootCmd.MustInit()
 }
