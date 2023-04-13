@@ -160,9 +160,7 @@ func mapColToMember(t *model.Table, mapTag func(name string, comment string) str
 
 func maptype(dataType string) string {
 	switch dataType {
-	case "time.Time":
-		return "string"
-	case "sql.NullTime":
+	case "time.Time", "sql.NullTime", "sql.NullString":
 		return "string"
 	case "sql.NullInt64":
 		return "int64"
@@ -170,8 +168,6 @@ func maptype(dataType string) string {
 		return "float64"
 	case "sql.NullBool":
 		return "bool"
-	case "sql.NullString":
-		return "string"
 	default:
 		return dataType
 	}
