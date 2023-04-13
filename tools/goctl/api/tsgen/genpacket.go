@@ -39,7 +39,7 @@ func genHandler(dir, webAPI, caller string, api *spec.ApiSpec, unwrapAPI bool) e
 		importCaller = "{ " + importCaller + " }"
 	}
 	if len(webAPI) > 0 {
-		imports += `import ` + importCaller + ` from ` + `"./"` + webAPI
+		imports += `import ` + importCaller + ` from ` + fmt.Sprintf(`"./%s"`, webAPI)
 	} else {
 		imports += `import ` + importCaller + ` from ` + `"./gocliRequest"`
 	}
