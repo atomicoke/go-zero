@@ -156,7 +156,7 @@ func genNewModelToSvc(svcDir string, name string) error {
 	}
 	// 正则判断是否已经存在
 	{
-		reg := regexp.MustCompile(fmt.Sprintf(`model\.New%sModel\(mysqlConn, c.Cache\),`, name))
+		reg := regexp.MustCompile(fmt.Sprintf(`model.New%sModel\(mysqlConn, c.Cache\),`, name))
 		if reg.MatchString(oldContent) {
 			return nil
 		}
