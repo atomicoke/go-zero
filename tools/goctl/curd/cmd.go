@@ -2,7 +2,6 @@ package curd
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -86,13 +85,13 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 		return err
 	}
 
-	logx.Must(gogen.GenTypes(dir, cfg, apiSpec))
-	logx.Must(gogen.GenRoutes(dir, rootPkg, cfg, apiSpec))
+	//logx.Must(gogen.GenTypes(dir, cfg, apiSpec))
+	//logx.Must(gogen.GenRoutes(dir, rootPkg, cfg, apiSpec))
 	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
 	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec))
-	logx.Must(gogen.GenMiddleware(dir, cfg, apiSpec))
+	//logx.Must(gogen.GenMiddleware(dir, cfg, apiSpec))
 
-	fmt.Println(apiSpecToString(apiSpec))
+	//fmt.Println(apiSpecToString(apiSpec))
 	return nil
 }
 

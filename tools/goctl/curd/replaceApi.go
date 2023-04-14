@@ -292,6 +292,8 @@ func buildRoute(prefix string, method string, action string, reqType spec.Define
 		AtDoc:        spec.AtDoc{Text: "\"" + desc + "\""},
 		RequestType:  reqType,
 		ResponseType: respType,
+		Curd:         true,
+		Action:       action,
 	}
 	return route
 }

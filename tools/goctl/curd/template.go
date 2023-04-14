@@ -6,23 +6,52 @@ import (
 )
 
 const (
-	category = "curd"
+	category        = "curd"
+	addLogicFile    = "addLogic.tpl"
+	deleteLogicFile = "deleteLogic.tpl"
+	getLogicFile    = "getLogic.tpl"
+	pageLogicFile   = "pageLogic.tpl"
+	updateLogicFile = "updateLogic.tpl"
 )
 
 var (
-	//go:embed tpl/add-logic.tpl
+	//go:embed tpl/addLogic.tpl
 	addLogic string
-	//go:embed tpl/delete-logic.tpl
+	//go:embed tpl/deleteLogic.tpl
 	deleteLogic string
-	//go:embed tpl/get-logic.tpl
+	//go:embed tpl/getLogic.tpl
 	getLogic string
-	//go:embed tpl/page-logic.tpl
+	//go:embed tpl/pageLogic.tpl
 	pageLogic string
-	//go:embed tpl/update-logic.tpl
+	//go:embed tpl/updateLogic.tpl
 	updateLogic string
 )
 
-var templates = map[string]string{}
+var templates = map[string]string{
+	addLogicFile:    addLogic,
+	deleteLogicFile: deleteLogic,
+	getLogicFile:    getLogic,
+	pageLogicFile:   pageLogic,
+	updateLogicFile: updateLogic,
+}
+
+func actionToLogicFile(s string) string {
+	a := action(s)
+	switch a {
+	case Add:
+		return addLogicFile
+	case Delete:
+		return deleteLogicFile
+	case Get:
+		return getLogicFile
+	case Page:
+		return pageLogicFile
+	case Update:
+		return updateLogicFile
+	}
+
+	return ""
+}
 
 // Category returns the category of the api files.
 func Category() string {

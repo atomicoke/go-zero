@@ -83,6 +83,8 @@ type (
 		HandlerComment     Doc
 		Doc                Doc
 		Comment            Doc
+		Curd               bool
+		Action             string
 	}
 
 	// Service describes api service
