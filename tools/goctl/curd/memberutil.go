@@ -18,6 +18,16 @@ func memberPk(members []spec.Member, pk *parser.Primary) []spec.Member {
 	}
 }
 
+func memberPkGet(members []spec.Member, pk *parser.Primary) []spec.Member {
+	return []spec.Member{
+		{
+			Name: pk.Name.Title(),
+			Type: spec.PrimitiveType{RawName: pk.DataType},
+			Tag:  mapFormTag(pk.Name.Source(), pk.Comment),
+		},
+	}
+}
+
 func members(members []spec.Member, pk *parser.Primary) []spec.Member {
 	return members
 }

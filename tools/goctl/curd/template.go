@@ -9,12 +9,20 @@ const (
 	category = "curd"
 )
 
-//go:embed api.tpl
-var apiTpl string
+var (
+	//go:embed tpl/add-logic.tpl
+	addLogic string
+	//go:embed tpl/delete-logic.tpl
+	deleteLogic string
+	//go:embed tpl/get-logic.tpl
+	getLogic string
+	//go:embed tpl/page-logic.tpl
+	pageLogic string
+	//go:embed tpl/update-logic.tpl
+	updateLogic string
+)
 
-var templates = map[string]string{
-	"api.tpl": apiTpl,
-}
+var templates = map[string]string{}
 
 // Category returns the category of the api files.
 func Category() string {

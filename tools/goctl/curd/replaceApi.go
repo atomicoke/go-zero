@@ -24,6 +24,7 @@ const (
 	Update action = "update"
 	Delete action = "delete"
 	Page   action = "page"
+	Get    action = "get"
 )
 
 func replaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
@@ -61,8 +62,12 @@ func replaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (
 	if err != nil {
 		return nil, err
 	}
+	getRoute, apiSpec, err := builder(Get, "获取", "get", memberPkGet, membersAndPk)
+	if err != nil {
+		return nil, err
+	}
 
-	mergeRouters(group, addRoute, updateRoute, deleteRoute, pageRoute)
+	mergeRouters(group, addRoute, getRoute, updateRoute, deleteRoute, pageRoute)
 
 	return replaceGroup(group, apiSpec), nil
 }
@@ -86,6 +91,9 @@ var mapJsonTag = func(name string, comment string) string {
 	return fmt.Sprintf("`label:\"%s\" json:\"%s\"`", comment, strcase.ToLowerCamel(name))
 }
 
+var mapFormTag = func(name string, comment string) string {
+	return fmt.Sprintf("`label:\"%s\" form:\"%s\"`", comment, strcase.ToLowerCamel(name))
+}
 var mapFormTagWithValid = func(name string, comment string, valid string) string {
 	return fmt.Sprintf("`label:\"%s\" validate:\"%s\" form:\"%s\"`", comment, valid, strcase.ToLowerCamel(name))
 }
