@@ -45,37 +45,6 @@ func apiSpecToString(apiSpec *spec.ApiSpec) string {
 	return sb.String()
 }
 
-func writeTypes(sb *strings.Builder, types []spec.Type) {
-	if len(types) == 0 {
-		return
-	}
-	sb.WriteString("type (\n")
-	for _, v := range types {
-		writeType(sb, v)
-	}
-	sb.WriteString(")\n")
-}
-
-func writeType(sb *strings.Builder, t spec.Type) {
-	switch t.(type) {
-	case spec.DefineStruct:
-		writeStruct(sb, t.(spec.DefineStruct))
-	default:
-		return
-	}
-}
-
-func writeStruct(sb *strings.Builder, defineStruct spec.DefineStruct) {
-	sb.WriteString(fmt.Sprintf("\t%s {\n", defineStruct.Name()))
-	for i := range defineStruct.Members {
-		member := defineStruct.Members[i]
-		writeDoc(sb, member.Docs)
-		sb.WriteString(fmt.Sprintf("\t\t%s %s %s %s", member.Name, member.Type.Name(), member.Tag, member.Comment))
-		sb.WriteString("\n")
-	}
-	sb.WriteString("\t}\n\n")
-}
-
 func writeInfo(sb *strings.Builder, info spec.Info) {
 	if len(info.Properties) == 0 {
 		return
@@ -122,6 +91,41 @@ func writeServices(sb *strings.Builder, service spec.Service) {
 	}
 }
 
+func writeTypes(sb *strings.Builder, types []spec.Type) {
+	if len(types) == 0 {
+		return
+	}
+	sb.WriteString("type (\n")
+	last := len(types) - 1
+	for i, v := range types {
+		writeType(sb, v)
+		if i != last {
+			sb.WriteString("\n")
+		}
+	}
+	sb.WriteString(")\n")
+}
+
+func writeType(sb *strings.Builder, t spec.Type) {
+	switch t.(type) {
+	case spec.DefineStruct:
+		writeStruct(sb, t.(spec.DefineStruct))
+	default:
+		return
+	}
+}
+
+func writeStruct(sb *strings.Builder, defineStruct spec.DefineStruct) {
+	sb.WriteString(fmt.Sprintf("\t%s {\n", defineStruct.Name()))
+	for i := range defineStruct.Members {
+		member := defineStruct.Members[i]
+		writeDoc(sb, member.Docs)
+		sb.WriteString(fmt.Sprintf("\t\t%s %s %s %s", member.Name, member.Type.Name(), member.Tag, member.Comment))
+		sb.WriteString("\n")
+	}
+	sb.WriteString("\t}\n")
+}
+
 func writeService(sb *strings.Builder, group spec.Group, name string) {
 	if len(group.Routes) == 0 {
 		return
@@ -132,9 +136,12 @@ func writeService(sb *strings.Builder, group spec.Group, name string) {
 }
 
 func writeRoutes(sb *strings.Builder, routes []spec.Route) {
-	for _, v := range routes {
+	for i, v := range routes {
+		last := len(routes) - 1
 		writeRoute(sb, v)
-		sb.WriteString("\n")
+		if i != last {
+			sb.WriteString("\n")
+		}
 	}
 }
 
