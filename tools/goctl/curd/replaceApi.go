@@ -17,7 +17,17 @@ import (
 
 const prefixKey = "curdPrefix"
 
-func replaceApi(output string, apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
+type action string
+
+const (
+	Add    action = "add"
+	Update action = "update"
+	Delete action = "delete"
+	Page   action = "page"
+	Get    action = "get"
+)
+
+func replaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
 	var (
 		prefix string
 		desc   string
@@ -35,29 +45,29 @@ func replaceApi(output string, apiSpec *spec.ApiSpec, cfg *config.Config, table 
 	}
 
 	group := findServiceGroup(apiSpec)
-	//group, err = addApiAndType(prefix, desc, table, group, apiSpec)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	builder := buildApiAndType(prefix, desc, table, apiSpec)
-	addRoute, apiSpec, err := builder("add", "添加", "post", members, memberPk)
+	addRoute, apiSpec, err := builder(Add, "添加", "post", members, memberPk)
 	if err != nil {
 		return nil, err
 	}
-	updateRoute, apiSpec, err := builder("update", "更新", "post", membersAndPk, members)
+	updateRoute, apiSpec, err := builder(Update, "更新", "post", membersAndPk, emptyMembers)
 	if err != nil {
 		return nil, err
 	}
-	deleteRoute, apiSpec, err := builder("delete", "删除", "post", memberPk, emptyMembers)
+	deleteRoute, apiSpec, err := builder(Delete, "删除", "post", memberPk, emptyMembers)
 	if err != nil {
 		return nil, err
 	}
-	pageRoute, apiSpec, err := builder("page", "分页", "get", members, membersAndPk)
+	pageRoute, apiSpec, err := builder(Page, "分页", "get", pageReqMembers, pageRespItemsMembers)
 	if err != nil {
 		return nil, err
 	}
-	mergeRouters(group, addRoute, updateRoute, deleteRoute, pageRoute)
+	getRoute, apiSpec, err := builder(Get, "获取", "get", memberPkGet, membersAndPk)
+	if err != nil {
+		return nil, err
+	}
+
+	mergeRouters(group, addRoute, getRoute, updateRoute, deleteRoute, pageRoute)
 
 	return replaceGroup(group, apiSpec), nil
 }
@@ -81,63 +91,23 @@ var mapJsonTag = func(name string, comment string) string {
 	return fmt.Sprintf("`label:\"%s\" json:\"%s\"`", comment, strcase.ToLowerCamel(name))
 }
 
-//func addApiAndType(prefix string, desc string, t *model.Table, group *spec.Group, apiSpec *spec.ApiSpec) (*spec.Group, error) {
-//	var (
-//		reqType         spec.DefineStruct
-//		respType        spec.DefineStruct
-//		addTypeReqName  = stringx.From(prefix).Title() + "AddReq"
-//		addTypeRespName = stringx.From(prefix).Title() + "AddResp"
-//		ok              bool
-//	)
-//	types := arrfn.ToMap(apiSpec.Types, func(t spec.Type) (string, spec.DefineStruct) {
-//		return t.Name(), t.(spec.DefineStruct)
-//	})
-//	newMembers, pk, err := mapColToMember(t, mapJsonTag, true)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	if reqType, ok = types[addTypeReqName]; !ok {
-//		reqType = spec.DefineStruct{
-//			RawName: addTypeReqName,
-//			Members: newMembers,
-//			Docs:    []string{fmt.Sprintf("add %s request", desc)},
-//		}
-//		apiSpec.Types = append(apiSpec.Types, reqType)
-//	} else {
-//		reqType.Members = mergeMembers(reqType, newMembers)
-//	}
-//
-//	if respType, ok = types[addTypeRespName]; !ok {
-//		respType = spec.DefineStruct{
-//			RawName: addTypeRespName,
-//			Members: []spec.Member{
-//				{
-//					Name: pk.Name.Title(),
-//					Type: spec.PrimitiveType{RawName: pk.DataType},
-//					Tag:  mapJsonTag(pk.Name.Source(), pk.Comment),
-//				},
-//			},
-//			Docs: []string{fmt.Sprintf("add %s response", desc)},
-//		}
-//		apiSpec.Types = append(apiSpec.Types, respType)
-//	}
-//
-//	mergeRouters(group, buildRoute(prefix, "post", "add", reqType, respType, "添加 "+desc))
-//
-//	return group, nil
-//}
+var mapFormTag = func(name string, comment string) string {
+	return fmt.Sprintf("`label:\"%s\" form:\"%s\"`", comment, strcase.ToLowerCamel(name))
+}
+var mapFormTagWithValid = func(name string, comment string, valid string) string {
+	return fmt.Sprintf("`label:\"%s\" validate:\"%s\" form:\"%s\"`", comment, valid, strcase.ToLowerCamel(name))
+}
 
 func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.ApiSpec) func(
-	action, chinesAction, method string,
+	action action, chinesAction, method string,
 	reqMember, respMember memberProvider) (spec.Route, *spec.ApiSpec, error) {
-	return func(action, chinesAction, method string, reqMember, respMember memberProvider) (spec.Route, *spec.ApiSpec, error) {
+	return func(action action, chinesAction, method string, reqMember, respMember memberProvider) (spec.Route, *spec.ApiSpec, error) {
 		var (
-			actionTitle  = stringx.From(action).Title()
+			actionTitle  = stringx.From(string(action)).Title()
 			reqType      spec.DefineStruct
 			respType     spec.DefineStruct
-			reqTypeName  = stringx.From(prefix).Title() + actionTitle + "Req"
-			respTypeName = stringx.From(prefix).Title() + actionTitle + "Resp"
+			reqTypeName  = strcase.ToCamel(prefix) + actionTitle + "Req"
+			respTypeName = strcase.ToCamel(prefix) + actionTitle + "Resp"
 			ok           bool
 		)
 		types := arrfn.ToMap(apiSpec.Types, func(t spec.Type) (string, spec.DefineStruct) {
@@ -163,24 +133,59 @@ func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.A
 				}
 			}
 		}
-
-		if respType, ok = types[respTypeName]; !ok {
+		if action == Page {
+			respMembers, itemTypeName := pageRespMembers(prefix)
 			respType = spec.DefineStruct{
 				RawName: respTypeName,
-				Members: respMember(newMembers, pk),
+				Members: respMembers,
 				Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
 			}
-			apiSpec.Types = append(apiSpec.Types, respType)
+			if _, ok = types[respTypeName]; !ok {
+				apiSpec.Types = append(apiSpec.Types, respType)
+			} else {
+				for i := range apiSpec.Types {
+					if apiSpec.Types[i].Name() == respTypeName {
+						apiSpec.Types[i] = respType
+					}
+				}
+			}
+			itemsMembers := pageRespItemsMembers(newMembers, pk)
+			itemsType := spec.DefineStruct{}
+			if respType, ok = types[itemTypeName]; !ok {
+				itemsType = spec.DefineStruct{
+					RawName: itemTypeName,
+					Members: itemsMembers,
+					Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
+				}
+				apiSpec.Types = append(apiSpec.Types, itemsType)
+			} else {
+				itemsType.Members = mergeMembers(itemsType, itemsMembers)
+				for i := range apiSpec.Types {
+					if apiSpec.Types[i].Name() == itemTypeName {
+						apiSpec.Types[i] = itemsType
+					}
+				}
+			}
+
 		} else {
-			respType.Members = mergeMembers(respType, respMember(newMembers, pk))
-			for i := range apiSpec.Types {
-				if apiSpec.Types[i].Name() == respTypeName {
-					apiSpec.Types[i] = respType
+			if respType, ok = types[respTypeName]; !ok {
+				respType = spec.DefineStruct{
+					RawName: respTypeName,
+					Members: respMember(newMembers, pk),
+					Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
+				}
+				apiSpec.Types = append(apiSpec.Types, respType)
+			} else {
+				respType.Members = mergeMembers(respType, respMember(newMembers, pk))
+				for i := range apiSpec.Types {
+					if apiSpec.Types[i].Name() == respTypeName {
+						apiSpec.Types[i] = respType
+					}
 				}
 			}
 		}
 
-		return buildRoute(prefix, method, action, reqType, respType, chinesAction+" "+desc), apiSpec, nil
+		return buildRoute(prefix, method, string(action), reqType, respType, chinesAction+" "+desc), apiSpec, nil
 	}
 }
 
@@ -287,6 +292,8 @@ func buildRoute(prefix string, method string, action string, reqType spec.Define
 		AtDoc:        spec.AtDoc{Text: "\"" + desc + "\""},
 		RequestType:  reqType,
 		ResponseType: respType,
+		Curd:         true,
+		Action:       action,
 	}
 	return route
 }

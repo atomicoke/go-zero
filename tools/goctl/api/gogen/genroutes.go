@@ -284,3 +284,7 @@ func getRoutes(api *spec.ApiSpec) ([]group, error) {
 func toPrefix(folder string) string {
 	return strings.ReplaceAll(folder, "/", "")
 }
+
+func GenRoutes(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec) error {
+	return genRoutes(dir, rootPkg, cfg, api)
+}

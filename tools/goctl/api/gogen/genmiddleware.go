@@ -41,3 +41,7 @@ func genMiddleware(dir string, cfg *config.Config, api *spec.ApiSpec) error {
 
 	return nil
 }
+
+func GenMiddleware(dir string, cfg *config.Config, api *spec.ApiSpec) error {
+	return genMiddleware(dir, cfg, api)
+}

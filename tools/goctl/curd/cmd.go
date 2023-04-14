@@ -2,11 +2,11 @@ package curd
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"github.com/zeromicro/go-zero/tools/goctl/api/gogen"
 	apiParser "github.com/zeromicro/go-zero/tools/goctl/api/parser"
 	"github.com/zeromicro/go-zero/tools/goctl/config"
 	"github.com/zeromicro/go-zero/tools/goctl/internal/cobrax"
@@ -37,6 +37,7 @@ func init() {
 	Cmd.Flags().StringVar(&dir, "dir")
 	Cmd.Flags().StringVar(&url, "url")
 	Cmd.Flags().StringVar(&table, "table")
+	Cmd.Flags().StringVar(&home, "home")
 	Cmd.Flags().StringVarWithDefaultValue(&style, "style", config.DefaultFormat)
 }
 
@@ -76,15 +77,20 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 		return err
 	}
 	logx.Must(pathx.MkdirIfNotExist(dir))
-	_, err = golang.GetParentPackage(dir)
+	rootPkg, err := golang.GetParentPackage(dir)
 	if err != nil {
 		return err
 	}
 
-	if apiSpec, err = replaceApi(apiFile, apiSpec, cfg, tableInfo); err != nil {
+	if apiSpec, err = replaceApi(apiSpec, cfg, tableInfo); err != nil {
 		return err
 	}
-	fmt.Println(apiSpecToString(apiSpec))
+
+	logx.Must(genTypes(dir, cfg, apiSpec))
+	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
+	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec))
+
+	//fmt.Println(apiSpecToString(apiSpec))
 	return nil
 }
 
