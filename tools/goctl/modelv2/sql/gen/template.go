@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	category                              = "modelv2"
+	category                              = "model"
 	deleteTemplateFile                    = "delete.tpl"
 	deleteMethodTemplateFile              = "interface-delete.tpl"
 	fieldTemplateFile                     = "field.tpl"
@@ -21,9 +21,9 @@ const (
 	importsWithNoCacheTemplateFile        = "import-no-cache.tpl"
 	insertTemplateFile                    = "insert.tpl"
 	insertTemplateMethodFile              = "interface-insert.tpl"
-	modelGenTemplateFile                  = "modelv2-gen.tpl"
-	modelCustomTemplateFile               = "modelv2.tpl"
-	modelNewTemplateFile                  = "modelv2-new.tpl"
+	modelGenTemplateFile                  = "model-gen.tpl"
+	modelCustomTemplateFile               = "model.tpl"
+	modelNewTemplateFile                  = "model-new.tpl"
 	tableNameTemplateFile                 = "table-name.tpl"
 	tagTemplateFile                       = "tag.tpl"
 	typesTemplateFile                     = "types.tpl"
@@ -58,7 +58,7 @@ var templates = map[string]string{
 	errTemplateFile:                       template.Error,
 }
 
-// Category returns modelv2 const value
+// Category returns model const value
 func Category() string {
 	return category
 }

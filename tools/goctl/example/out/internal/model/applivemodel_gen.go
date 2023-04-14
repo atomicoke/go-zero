@@ -5,10 +5,16 @@ package model
 import (
 	"context"
 	"database/sql"
+	"dm.com/toolx/arr"
 	"fmt"
 	"strings"
 
+	"dm-admin/common/sbuilder"
+	"github.com/Masterminds/squirrel"
+	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/core/errorx"
 	"github.com/zeromicro/go-zero/core/stores/builder"
+	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/core/stringx"
@@ -17,21 +23,49 @@ import (
 var (
 	appLiveFieldNames          = builder.RawFieldNames(&AppLive{})
 	appLiveRows                = strings.Join(appLiveFieldNames, ",")
-	appLiveRowsExpectAutoSet   = strings.Join(stringx.Remove(appLiveFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
-	appLiveRowsWithPlaceHolder = strings.Join(stringx.Remove(appLiveFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
+	appLiveRowsExpectAutoSet   = strings.Join(stringx.Remove(appLiveFieldNames, "`id`", "`create_time`", "`update_time`", "`create_at`", "`update_at`", "`created_at`", "`updated_at`"), ",")
+	appLiveRowsWithPlaceHolder = strings.Join(stringx.Remove(appLiveFieldNames, "`id`", "`create_time`", "`update_time`", "`create_at`", "`update_at`", "`created_at`", "`updated_at`"), "=?,") + "=?"
+
+	cacheShopAppLiveIdPrefix = "cache:shop:appLive:id:"
 )
 
 type (
 	appLiveModel interface {
-		Insert(ctx context.Context, data *AppLive) (sql.Result, error)
+		Insert(ctx context.Context, session sqlx.Session, data *AppLive) (sql.Result, error)
+		InsertPart(ctx context.Context, session sqlx.Session, data *AppLiveUpdate) (sql.Result, error)
+
 		FindOne(ctx context.Context, id int64) (*AppLive, error)
-		Update(ctx context.Context, data *AppLive) error
-		Delete(ctx context.Context, id int64) error
+		Where(name string, v any) *sbuilder.Find[*AppLive]
+		RowBuilder(filed string) squirrel.SelectBuilder
+		CountBuilder(field string) squirrel.SelectBuilder
+		SumBuilder(field string) squirrel.SelectBuilder
+		FindOneByQuery(ctx context.Context, rowBuilder squirrel.SelectBuilder) (*AppLive, error)
+		FindSum(ctx context.Context, sumBuilder squirrel.SelectBuilder) (float64, error)
+		FindCount(ctx context.Context, countBuilder squirrel.SelectBuilder) (int64, error)
+		FindRowsByQuery(ctx context.Context, rowBuilder squirrel.SelectBuilder, orderBy string) ([]*AppLive, error)
+		FindPageListByPage(ctx context.Context, rowBuilder squirrel.SelectBuilder, page, pageSize int64, orderBy string) ([]*AppLive, error)
+		Pagination(ctx context.Context, bulder sbuilder.PaginationBuilder, page int64, limit int64, orderBy string) (list []*AppLive, total int64, err error)
+		TableName() string
+		FiledRows() string
+		Fields() AppLiveFieldsType
+		All(ctx context.Context, builder squirrel.SelectBuilder) (list []*AppLive, err error)
+		AllPartial(ctx context.Context, builder squirrel.SelectBuilder) (list []*AppLive, err error)
+		FindOnePartial(ctx context.Context, rowBuilder squirrel.SelectBuilder) (*AppLive, error)
+		FindRowsPartial(ctx context.Context, rowBuilder squirrel.SelectBuilder) ([]*AppLive, error)
+		FindPagePartial(ctx context.Context, rowBuilder squirrel.SelectBuilder, page, pageSize int64) ([]*AppLive, error)
+		Update(ctx context.Context, session sqlx.Session, data *AppLive) (sql.Result, error)
+		Trans(ctx context.Context, fn func(context context.Context, session sqlx.Session) error) error
+		UpdateVersion(ctx context.Context, session sqlx.Session, oldVersion int64, data *AppLive) error
+		UpdatePart(ctx context.Context, session sqlx.Session, data *AppLiveUpdate) error
+
+		Delete(ctx context.Context, session sqlx.Session, id int64) error
 	}
 
 	defaultAppLiveModel struct {
-		conn  sqlx.SqlConn
-		table string
+		sqlc.CachedConn
+		conn    sqlx.SqlConn
+		table   string
+		isCache bool
 	}
 
 	AppLive struct {
@@ -39,17 +73,62 @@ type (
 		Image string `db:"image"` // 图片
 		Url   string `db:"url"`   // 跳转路径
 	}
+
+	AppLiveUpdate struct {
+		Row  *AppLive
+		list arr.Vector[KV]
+	}
 )
 
-func newAppLiveModel(conn sqlx.SqlConn) *defaultAppLiveModel {
-	return &defaultAppLiveModel{
-		conn:  conn,
-		table: "`app_live`",
+type AppLiveFieldsType = struct {
+	Id    string
+	Image string
+	Url   string
+}
+
+var AppLiveFields = AppLiveFieldsType{
+	Id:    "id",
+	Image: "image",
+	Url:   "url",
+}
+
+func (r *AppLiveUpdate) SetId(v int64) *AppLiveUpdate {
+	r.Row.Id = v
+	r.list = append(r.list, KV{"id", v})
+	return r
+}
+func (r *AppLiveUpdate) SetImage(v string) *AppLiveUpdate {
+	r.Row.Image = v
+	r.list = append(r.list, KV{"image", v})
+	return r
+}
+func (r *AppLiveUpdate) SetUrl(v string) *AppLiveUpdate {
+	r.Row.Url = v
+	r.list = append(r.list, KV{"url", v})
+	return r
+}
+
+func (r *AppLive) ToEntity() *AppLiveUpdate {
+	return &AppLiveUpdate{
+		Row: r,
 	}
 }
 
-func (m *defaultAppLiveModel) Delete(ctx context.Context, id int64) error {
+func newAppLiveModel(conn sqlx.SqlConn, c cache.CacheConf) *defaultAppLiveModel {
+	return &defaultAppLiveModel{
+		CachedConn: sqlc.NewConn(conn, c),
+		conn:       conn,
+		table:      "`app_live`",
+		isCache:    false,
+	}
+}
+
+func (m *defaultAppLiveModel) Delete(ctx context.Context, session sqlx.Session, id int64) error {
 	query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
+	if session != nil {
+		_, err := session.ExecCtx(ctx, query, id)
+		return err
+	}
 	_, err := m.conn.ExecCtx(ctx, query, id)
 	return err
 }
@@ -68,16 +147,414 @@ func (m *defaultAppLiveModel) FindOne(ctx context.Context, id int64) (*AppLive, 
 	}
 }
 
-func (m *defaultAppLiveModel) Insert(ctx context.Context, data *AppLive) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?)", m.table, appLiveRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.Image, data.Url)
-	return ret, err
+func (m *defaultAppLiveModel) Where(name string, v any) *sbuilder.Find[*AppLive] {
+	return sbuilder.NewFind[*AppLive](m).Eq(name, v)
 }
 
-func (m *defaultAppLiveModel) Update(ctx context.Context, data *AppLive) error {
+func (m *defaultAppLiveModel) FindOneByQuery(ctx context.Context, rowBuilder squirrel.SelectBuilder) (*AppLive, error) {
+	query, values, err := rowBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppLive
+
+	err = m.conn.QueryRowCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return &resp, nil
+	default:
+		return nil, err
+	}
+}
+
+func (m *defaultAppLiveModel) FindSum(ctx context.Context, sumBuilder squirrel.SelectBuilder) (float64, error) {
+	query, values, err := sumBuilder.ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var resp float64
+
+	err = m.conn.QueryRowCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return 0, err
+	}
+}
+
+func (m *defaultAppLiveModel) FindCount(ctx context.Context, countBuilder squirrel.SelectBuilder) (int64, error) {
+	query, values, err := countBuilder.ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var resp int64
+
+	err = m.conn.QueryRowCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return 0, err
+	}
+}
+
+func (m *defaultAppLiveModel) FindRowsByQuery(ctx context.Context, rowBuilder squirrel.SelectBuilder, orderBy string) ([]*AppLive, error) {
+	if orderBy == "" {
+		rowBuilder = rowBuilder.OrderBy("id DESC")
+	} else {
+		rowBuilder = rowBuilder.OrderBy(orderBy)
+	}
+
+	query, values, err := rowBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []*AppLive
+
+	err = m.conn.QueryRowsCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return nil, err
+	}
+}
+
+func (m *defaultAppLiveModel) FindPageListByPage(ctx context.Context, rowBuilder squirrel.SelectBuilder, page, pageSize int64, orderBy string) ([]*AppLive, error) {
+	if orderBy == "" {
+		rowBuilder = rowBuilder.OrderBy("id DESC")
+	} else {
+		rowBuilder = rowBuilder.OrderBy(orderBy)
+	}
+
+	if page < 1 {
+		page = 1
+	}
+
+	offset := (page - 1) * pageSize
+
+	query, values, err := rowBuilder.Offset(uint64(offset)).Limit(uint64(pageSize)).ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []*AppLive
+
+	err = m.conn.QueryRowsCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return nil, err
+	}
+}
+
+// export logic
+func (m *defaultAppLiveModel) RowBuilder(filed string) squirrel.SelectBuilder {
+	if filed == "*" || filed == "" {
+		return squirrel.Select(appLiveRows).From(m.table)
+	}
+	return squirrel.Select(filed).From(m.table)
+}
+
+// export logic
+func (m *defaultAppLiveModel) CountBuilder(field string) squirrel.SelectBuilder {
+	if field == "" {
+		field = "*"
+	}
+	return squirrel.Select("COUNT(" + field + ")").From(m.table)
+}
+
+// export logic
+func (m *defaultAppLiveModel) SumBuilder(field string) squirrel.SelectBuilder {
+	return squirrel.Select("IFNULL(SUM(" + field + "),0)").From(m.table)
+}
+
+// 简单分页方法
+func (m *defaultAppLiveModel) Pagination(ctx context.Context, builder sbuilder.PaginationBuilder, page int64, limit int64, orderBy string) (list []*AppLive, total int64, err error) {
+	var where, count = builder.Res()
+	if orderBy == "" {
+		where = where.OrderBy("id DESC")
+	} else {
+		where = where.OrderBy(orderBy)
+	}
+
+	if page < 1 {
+		page = 1
+	}
+	if limit == 0 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+
+	{
+		query, values, err := where.Offset(uint64(offset)).Limit(uint64(limit)).ToSql()
+		if err != nil {
+			return nil, 0, err
+		}
+
+		err = m.conn.QueryRowsCtx(ctx, &list, query, values...)
+
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+	{
+		query, values, err := count.ToSql()
+		if err != nil {
+			return nil, 0, err
+		}
+
+		err = m.conn.QueryRowCtx(ctx, &total, query, values...)
+
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return list, total, nil
+}
+
+func (m *defaultAppLiveModel) TableName() string {
+	return m.tableName()
+}
+
+func (m *defaultAppLiveModel) FiledRows() string {
+	return appLiveRows
+}
+
+func (m *defaultAppLiveModel) Fields() AppLiveFieldsType {
+	return AppLiveFields
+}
+
+func (m *defaultAppLiveModel) All(ctx context.Context, builder squirrel.SelectBuilder) (list []*AppLive, err error) {
+	query, values, err := builder.ToSql()
+	if err != nil {
+		return nil, errorx.Wrapf(err, "builder_to_sql:%v", m.tableName())
+	}
+
+	err = m.conn.QueryRowsCtx(ctx, &list, query, values...)
+
+	if err != nil {
+		return nil, errorx.Wrapf(err, "query_rows:%v", m.tableName())
+	}
+
+	return list, nil
+}
+
+func (m *defaultAppLiveModel) AllPartial(ctx context.Context, builder squirrel.SelectBuilder) (list []*AppLive, err error) {
+	query, values, err := builder.ToSql()
+	if err != nil {
+		return nil, errorx.Wrapf(err, "builder_to_sql:%v", m.tableName())
+	}
+
+	err = m.conn.QueryRowsPartialCtx(ctx, &list, query, values...)
+
+	if err != nil {
+		return nil, errorx.Wrapf(err, "query_rows:%v", m.tableName())
+	}
+
+	return list, nil
+}
+
+func (m *defaultAppLiveModel) FindOnePartial(ctx context.Context, rowBuilder squirrel.SelectBuilder) (*AppLive, error) {
+	query, values, err := rowBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppLive
+
+	err = m.conn.QueryRowPartialCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return &resp, nil
+	default:
+		return nil, err
+	}
+}
+
+func (m *defaultAppLiveModel) FindRowsPartial(ctx context.Context, rowBuilder squirrel.SelectBuilder) ([]*AppLive, error) {
+	query, values, err := rowBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []*AppLive
+
+	err = m.conn.QueryRowsPartialCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return nil, err
+	}
+}
+
+func (m *defaultAppLiveModel) FindPagePartial(ctx context.Context, rowBuilder squirrel.SelectBuilder, page, pageSize int64) ([]*AppLive, error) {
+	if page < 1 {
+		page = 1
+	}
+
+	offset := (page - 1) * pageSize
+
+	query, values, err := rowBuilder.Offset(uint64(offset)).Limit(uint64(pageSize)).ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []*AppLive
+
+	err = m.conn.QueryRowsPartialCtx(ctx, &resp, query, values...)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return nil, err
+	}
+}
+
+func (m *defaultAppLiveModel) formatPrimary(primary interface{}) string {
+	return fmt.Sprintf("%s%v", "", primary)
+}
+func (m *defaultAppLiveModel) queryPrimary(ctx context.Context, conn sqlx.SqlConn, v, primary interface{}) error {
+	query := fmt.Sprintf("select %s from %s where <no value> = ? limit 1", appLiveRows, m.table)
+	return conn.QueryRowCtx(ctx, v, query, primary)
+}
+
+func (m *defaultAppLiveModel) Insert(ctx context.Context, session sqlx.Session, data *AppLive) (sql.Result, error) {
+
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?)", m.table, appLiveRowsExpectAutoSet)
+	if session != nil {
+		return session.ExecCtx(ctx, query, data.Image, data.Url)
+	}
+	return m.conn.ExecCtx(ctx, query, data.Image, data.Url)
+}
+
+func (m *defaultAppLiveModel) InsertPart(ctx context.Context, session sqlx.Session, newData *AppLiveUpdate) (sql.Result, error) {
+	keys := arr.Map(&newData.list, func(v KV) string {
+		return "`" + v.K + "`"
+	}).Join(",")
+	exp := arr.Map(&newData.list, func(v KV) string {
+		return "?"
+	}).Join(",")
+	values := arr.Map(&newData.list, func(v KV) any {
+		return v.V
+	}).ToSlice()
+
+	query := fmt.Sprintf("insert into %s (%s) values (%s)", m.table, keys, exp)
+	if session != nil {
+		return session.ExecCtx(ctx, query, values...)
+	}
+	return m.conn.ExecCtx(ctx, query, values...)
+}
+
+func (m *defaultAppLiveModel) fileExpressionValues(data *AppLive) []interface{} {
+	return []interface{}{data.Image, data.Url}
+}
+
+func (m *defaultAppLiveModel) filedExpression() string {
+	return "?, ?"
+}
+
+func (m *defaultAppLiveModel) Update(ctx context.Context, session sqlx.Session, data *AppLive) (sql.Result, error) {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, appLiveRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.Image, data.Url, data.Id)
-	return err
+	if session != nil {
+		return session.ExecCtx(ctx, query, data.Image, data.Url, data.Id)
+	}
+	return m.conn.ExecCtx(ctx, query, data.Image, data.Url, data.Id)
+}
+
+// todo 加缓存
+func (m *defaultAppLiveModel) UpdatePart(ctx context.Context, session sqlx.Session, newData *AppLiveUpdate) error {
+	keys := arr.Map(&newData.list, func(v KV) string {
+		return "`" + v.K + "`=?"
+	}).Join(",")
+	values := arr.Map(&newData.list, func(v KV) any {
+		return v.V
+	})
+
+	values.Push(newData.Row.Id)
+
+	f := func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, keys)
+		v := values.ToSlice()
+		if session != nil {
+			return session.ExecCtx(ctx, query, v...)
+		}
+		return conn.ExecCtx(ctx, query, v...)
+	}
+
+	res, err := f(ctx, m.conn)
+
+	if err != nil {
+		return errors.Wrap(err, "更新失败")
+	}
+
+	n, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "获取影响行数")
+	}
+
+	if n <= 0 {
+		return errors.Errorf("影响行数为:%d", n)
+	}
+
+	return nil
+}
+
+// 事务
+func (m *defaultAppLiveModel) Trans(ctx context.Context, fn func(ctx context.Context, session sqlx.Session) error) error {
+
+	return m.conn.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
+		return fn(ctx, session)
+	})
+
+}
+
+// 有没有缓存都走这一套
+func (m *defaultAppLiveModel) UpdateVersion(ctx context.Context, session sqlx.Session, oldVersion int64, data *AppLive) error {
+	values := m.fileExpressionValues(data)
+	values = append(values, data.Id)
+	values = append(values, oldVersion)
+	f := func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+		query := fmt.Sprintf("update %s set %s where `id` = ? AND version=?", m.table, appLiveRowsWithPlaceHolder)
+		if session != nil {
+			return session.ExecCtx(ctx, query, values...)
+		}
+		return conn.ExecCtx(ctx, query, values...)
+	}
+
+	res, err := f(ctx, m.conn)
+
+	if err != nil {
+		return errors.Wrap(err, "更新失败")
+	}
+
+	n, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "获取影响行数")
+	}
+
+	if n <= 0 {
+		return errors.Errorf("影响行数为:%d", n)
+	}
+
+	return nil
 }
 
 func (m *defaultAppLiveModel) tableName() string {
