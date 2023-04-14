@@ -16,7 +16,6 @@ type ServiceContext struct {
 	LoginLog         rest.Middleware
 	UsersModel       model.ThinkUsersModel
 	AppLiveModel        model.AppLiveModel
-	UsersModel2      model.ThinkUsersModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
