@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"github.com/zeromicro/go-zero/tools/goctl/api/gogen"
 	apiParser "github.com/zeromicro/go-zero/tools/goctl/api/parser"
 	"github.com/zeromicro/go-zero/tools/goctl/config"
 	"github.com/zeromicro/go-zero/tools/goctl/internal/cobrax"
@@ -76,14 +77,21 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 		return err
 	}
 	logx.Must(pathx.MkdirIfNotExist(dir))
-	_, err = golang.GetParentPackage(dir)
+	rootPkg, err := golang.GetParentPackage(dir)
 	if err != nil {
 		return err
 	}
 
-	if apiSpec, err = replaceApi(apiFile, apiSpec, cfg, tableInfo); err != nil {
+	if apiSpec, err = replaceApi(apiSpec, cfg, tableInfo); err != nil {
 		return err
 	}
+
+	logx.Must(gogen.GenTypes(dir, cfg, apiSpec))
+	logx.Must(gogen.GenRoutes(dir, rootPkg, cfg, apiSpec))
+	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
+	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec))
+	logx.Must(gogen.GenMiddleware(dir, cfg, apiSpec))
+
 	fmt.Println(apiSpecToString(apiSpec))
 	return nil
 }

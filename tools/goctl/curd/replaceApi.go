@@ -26,7 +26,7 @@ const (
 	Page   action = "page"
 )
 
-func replaceApi(output string, apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
+func replaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
 	var (
 		prefix string
 		desc   string

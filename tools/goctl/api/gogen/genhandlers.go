@@ -139,3 +139,7 @@ func getLogicName(route spec.Route) string {
 
 	return handler + "Logic"
 }
+
+func GenHandlers(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec) error {
+	return genHandlers(dir, rootPkg, cfg, api)
+}

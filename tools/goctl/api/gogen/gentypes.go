@@ -91,3 +91,7 @@ func writeType(writer io.Writer, tp spec.Type) error {
 	fmt.Fprintf(writer, "}")
 	return nil
 }
+
+func GenTypes(dir string, cfg *config.Config, api *spec.ApiSpec) error {
+	return genTypes(dir, cfg, api)
+}
