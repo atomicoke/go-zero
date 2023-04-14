@@ -26,6 +26,16 @@ var (
 	}
 )
 
+func sortFunc[K comparable](m map[K]int) func(key K) int {
+	return func(key K) int {
+		i, ok := m[key]
+		if !ok {
+			return 100000
+		}
+		return i
+	}
+}
+
 func apiSpecToString(apiSpec *spec.ApiSpec) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("syntax = %s\n\n", apiSpec.Syntax.Version))
@@ -50,7 +60,7 @@ func writeInfo(sb *strings.Builder, info spec.Info) {
 		return
 	}
 	sb.WriteString("info (\n")
-	writeAnnotation2(sb, info.Properties, sortInfoKey)
+	writeAnnotation2(sb, info.Properties, sortFunc(sortInfoKey))
 	sb.WriteString(")\n")
 }
 
@@ -178,7 +188,7 @@ func writeServer(sb *strings.Builder, group spec.Group) {
 		return
 	}
 	sb.WriteString("@server (\n")
-	writeAnnotation2(sb, group.Annotation.Properties, sortServerKey)
+	writeAnnotation2(sb, group.Annotation.Properties, sortFunc(sortServerKey))
 	sb.WriteString(")\n")
 }
 
@@ -204,14 +214,14 @@ func writeAnnotation(sb *strings.Builder, p map[string]string) {
 	}
 }
 
-func writeAnnotation2(sb *strings.Builder, p map[string]string, sortServerKey map[string]int) {
+func writeAnnotation2(sb *strings.Builder, p map[string]string, sortFunc func(string) int) {
 	//sort map
 	var keys []string
 	for k := range p {
 		keys = append(keys, k)
 	}
 	sort.Slice(keys, func(i, j int) bool {
-		return sortServerKey[keys[i]] < sortServerKey[keys[j]]
+		return sortFunc(keys[i]) < sortFunc(keys[j])
 	})
 	for _, k := range keys {
 		sb.WriteString(fmt.Sprintf("\t%s: %s\n", k, p[k]))
