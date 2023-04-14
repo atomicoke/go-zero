@@ -204,18 +204,18 @@ func arrRemove[T any](slice []T, i int) []T {
 	return slice[:len(slice)-1]
 }
 
-func mergeMembers(reqType spec.DefineStruct, newMembers []spec.Member) []spec.Member {
+func mergeMembers(reqType spec.DefineStruct, dbMembers []spec.Member) []spec.Member {
 	prevMemberMap := arrfn.ToMap(reqType.Members, func(m spec.Member) (string, spec.Member) {
 		return m.Name, m
 	})
 
-	var copyNewMembers = make([]spec.Member, len(newMembers))
+	var copyDbMembers = make([]spec.Member, len(dbMembers))
 	var reqTypeMembers = make([]spec.Member, len(reqType.Members))
 
-	copy(copyNewMembers, newMembers)
+	copy(copyDbMembers, dbMembers)
 	copy(reqTypeMembers, reqType.Members)
 
-	for _, v := range copyNewMembers {
+	for _, v := range copyDbMembers {
 		if _, ok := prevMemberMap[v.Name]; !ok {
 			reqTypeMembers = append(reqTypeMembers, v)
 		}
@@ -225,7 +225,7 @@ func mergeMembers(reqType spec.DefineStruct, newMembers []spec.Member) []spec.Me
 
 	for i := 0; i < len(reqTypeMembers); i++ {
 		v := reqTypeMembers[i]
-		for _, x := range copyNewMembers {
+		for _, x := range copyDbMembers {
 			if v.Name == x.Name {
 				sortMembers = append(sortMembers, v)
 				reqTypeMembers = arrRemove(reqTypeMembers, i)
