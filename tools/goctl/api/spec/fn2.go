@@ -22,6 +22,15 @@ var timeMap = map[string]bool{
 	"DeletedTime": true,
 }
 
+var timeTypeMap = map[string]bool{
+	"time.Time":    true,
+	"sql.NullTime": true,
+}
+
 func (m Member) IsTime() bool {
 	return timeMap[m.Name]
+}
+
+func (m Member) IsTimeType() bool {
+	return timeTypeMap[m.Type.Name()]
 }

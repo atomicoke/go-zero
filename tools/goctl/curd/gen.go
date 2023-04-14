@@ -3,6 +3,7 @@ package curd
 import (
 	"dm.com/toolx/arr"
 	"dm.com/toolx/fn/arrfn"
+	"fmt"
 	"github.com/iancoleman/strcase"
 	"github.com/zeromicro/go-zero/tools/goctl/api/gogen"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
@@ -16,8 +17,9 @@ import (
 	"strings"
 )
 
-func genLogic(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec, tableName string) error {
+func genLogic(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec, tableName string, tableInfo *model.Table) error {
 	modelName := strcase.ToCamel(tableName + "Model")
+	entityName := strcase.ToCamel(tableName)
 	typesMap := arrfn.ToMap(api.Types, func(e spec.Type) (string, spec.DefineStruct) {
 		return e.Name(), e.(spec.DefineStruct)
 	})
@@ -30,7 +32,7 @@ func genLogic(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec, tableN
 			if !r.Curd {
 				continue
 			}
-			err := genLogicByRoute(dir, rootPkg, cfg, g, r, modelName, typesMap)
+			err := genLogicByRoute(dir, rootPkg, cfg, g, r, modelName, entityName, typesMap, tableInfo)
 			if err != nil {
 				return err
 			}
@@ -50,7 +52,8 @@ func genModel(dir string, cfg *config.Config, tableName string, table *model.Tab
 	return generator.StartFromInformationSchema(map[string]*model.Table{tableName: table}, false, false)
 }
 
-func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, route spec.Route, modelName string, typesMap map[string]spec.DefineStruct) error {
+func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, route spec.Route,
+	modelName, entityName string, typesMap map[string]spec.DefineStruct, tableInfo *model.Table) error {
 	logic := gogen.GetLogicName(route)
 	goFile, err := format.FileNamingFormat(cfg.NamingFormat, logic)
 	if err != nil {
@@ -100,9 +103,24 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 			"title":        arr.NewMap(route.AtDoc.Properties).Get("summary", route.AtDoc.Text),
 			"method":       route.Method,
 			"modelName":    modelName,
+			"entityName":   entityName,
 			"reqMembers":   reqType.Members,
 			"respMembers":  respType.Members,
 			"resp":         "&" + gogen.TypesPacket + "." + respType.Name(),
+		},
+		FuncMap: map[string]any{
+			"IsTime": func(colName string) bool {
+				for i := range tableInfo.Columns {
+					if strcase.ToCamel(tableInfo.Columns[i].Name) == colName {
+						b := tableInfo.Columns[i].DataType == "datetime"
+						if b {
+							fmt.Println("is time: ", colName)
+						}
+						return b
+					}
+				}
+				return false
+			},
 		},
 	})
 }
