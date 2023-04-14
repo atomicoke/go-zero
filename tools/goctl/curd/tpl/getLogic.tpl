@@ -1,6 +1,12 @@
 package {{.pkgName}}
 
 import (
+    "{{.importModel}}"
+    "dm-admin/common/sbuilder"
+    "dm-admin/common/errorx"
+    "dm-admin/common/utils"
+    "github.com/Masterminds/squirrel"
+
 	{{.imports}}
 )
 
@@ -18,9 +24,21 @@ func New{{.logic}}(ctx context.Context, svcCtx *svc.ServiceContext) *{{.logic}} 
 	}
 }
 
-func (l *{{.logic}}) model() any {
-    // todo add your model here
-    panic("add your model here")
+func (l *{{.logic}}) model() model.{{.modelName}} {
+    return l.svcCtx.{{.modelName}}
+}
+
+// get sql builder
+func (l *{{.logic}}) sql({{.request}}) squirrel.SelectBuilder {
+    var (
+    	m = l.model()
+    	f = m.Fields()
+    )
+    return sbuilder.Where(m){{- range .reqMembers }}.
+       {{ $type := .Type.Name }}
+       Eq(f.{{.Name}}, req.{{.Name}}).
+   {{- end }}
+       Res()
 }
 
 /*
@@ -28,7 +46,15 @@ func (l *{{.logic}}) model() any {
 @route {{.route}}
 */
 func (l *{{.logic}}) {{.function}}({{.request}}) {{.responseType}} {
-	// todo: add your logic here and delete this line
+	entity, err := l.model().FindOneByQuery(l.ctx, l.sql(req))
+	if err != nil {
+		return nil, errorx.Shadow(l, err, {{.title}})
+	}
 
+	resp = {{.resp}}{
+	{{- range .respMembers }}
+	{{ if .IsTime }}{{.Name}}: utils.MapTime(entity.{{.Name}}),{{else}}{{.Name}}: entity.{{.Name}},{{end}}
+    {{- end }}
+	}
 	{{.returnString}}
 }

@@ -23,6 +23,7 @@ type fileGenConfig struct {
 	templateFile    string
 	builtinTemplate string
 	data            any
+	funcMap         map[string]any
 }
 
 func genFile(c fileGenConfig) error {
@@ -45,7 +46,7 @@ func genFile(c fileGenConfig) error {
 		}
 	}
 
-	t := template.Must(template.New(c.templateName).Parse(text))
+	t := template.Must(template.New(c.templateName).Funcs(c.funcMap).Parse(text))
 	buffer := new(bytes.Buffer)
 	err = t.Execute(buffer, c.data)
 	if err != nil {

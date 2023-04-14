@@ -56,6 +56,7 @@ func GenFile(c FileGenConfig) error {
 		templateFile:    c.TemplateFile,
 		builtinTemplate: c.BuiltinTemplate,
 		data:            c.Data,
+		funcMap:         c.FuncMap,
 	})
 }
 
@@ -68,4 +69,5 @@ type FileGenConfig struct {
 	TemplateFile    string
 	BuiltinTemplate string
 	Data            any
+	FuncMap         map[string]any
 }
