@@ -41,23 +41,23 @@ func replaceApi(output string, apiSpec *spec.ApiSpec, cfg *config.Config, table 
 	//}
 
 	builder := buildApiAndType(prefix, desc, table, apiSpec)
-	//addRoute, err := builder("add", "添加", "post", members, memberPk)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//updateRoute, err := builder("update", "更新", "post", membersAndPk, members)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//deleteRoute, err := builder("delete", "删除", "post", memberPk, emptyMembers)
-	//if err != nil {
-	//	return nil, err
-	//}
+	addRoute, apiSpec, err := builder("add", "添加", "post", members, memberPk)
+	if err != nil {
+		return nil, err
+	}
+	updateRoute, apiSpec, err := builder("update", "更新", "post", membersAndPk, members)
+	if err != nil {
+		return nil, err
+	}
+	deleteRoute, apiSpec, err := builder("delete", "删除", "post", memberPk, emptyMembers)
+	if err != nil {
+		return nil, err
+	}
 	pageRoute, apiSpec, err := builder("page", "分页", "get", members, membersAndPk)
 	if err != nil {
 		return nil, err
 	}
-	mergeRouters(group /* addRoute, updateRoute, deleteRoute,*/, pageRoute)
+	mergeRouters(group, addRoute, updateRoute, deleteRoute, pageRoute)
 
 	return replaceGroup(group, apiSpec), nil
 }
