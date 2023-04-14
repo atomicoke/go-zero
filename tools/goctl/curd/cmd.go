@@ -37,6 +37,7 @@ func init() {
 	Cmd.Flags().StringVar(&dir, "dir")
 	Cmd.Flags().StringVar(&url, "url")
 	Cmd.Flags().StringVar(&table, "table")
+	Cmd.Flags().StringVar(&home, "home")
 	Cmd.Flags().StringVarWithDefaultValue(&style, "style", config.DefaultFormat)
 }
 
@@ -85,11 +86,9 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 		return err
 	}
 
-	//logx.Must(gogen.GenTypes(dir, cfg, apiSpec))
-	//logx.Must(gogen.GenRoutes(dir, rootPkg, cfg, apiSpec))
+	logx.Must(genTypes(dir, cfg, apiSpec))
 	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
 	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec))
-	//logx.Must(gogen.GenMiddleware(dir, cfg, apiSpec))
 
 	//fmt.Println(apiSpecToString(apiSpec))
 	return nil

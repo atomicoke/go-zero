@@ -6,6 +6,8 @@ import (
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
 	"github.com/zeromicro/go-zero/tools/goctl/config"
 	"github.com/zeromicro/go-zero/tools/goctl/util/format"
+	"os"
+	"path"
 	"strings"
 )
 
@@ -69,8 +71,38 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 			"returnString": returnString,
 			"request":      requestString,
 			"route":        arr.NewMap(group.Annotation.Properties).Get("prefix", "") + route.Path,
-			"title":        arr.NewMap(route.AtDoc.Properties).Get("summary", ""),
+			"title":        arr.NewMap(route.AtDoc.Properties).Get("summary", route.AtDoc.Text),
 			"method":       route.Method,
+		},
+	})
+}
+
+func genTypes(dir string, cfg *config.Config, api *spec.ApiSpec) error {
+	val, err := gogen.BuildTypes(api.Types)
+	if err != nil {
+		return err
+	}
+
+	typeFilename, err := format.FileNamingFormat(cfg.NamingFormat, "curd_types")
+	if err != nil {
+		return err
+	}
+
+	typeFilename = typeFilename + ".go"
+	filename := path.Join(dir, gogen.TypesDir, typeFilename)
+	_ = os.Remove(filename)
+
+	return gogen.GenFile(gogen.FileGenConfig{
+		Dir:             dir,
+		Subdir:          gogen.TypesDir,
+		Filename:        typeFilename,
+		TemplateName:    "typesTemplate",
+		Category:        gogen.CategoryE,
+		TemplateFile:    gogen.TypesTemplateFile,
+		BuiltinTemplate: gogen.TypesTemplate,
+		Data: map[string]any{
+			"types":        val,
+			"containsTime": false,
 		},
 	})
 }

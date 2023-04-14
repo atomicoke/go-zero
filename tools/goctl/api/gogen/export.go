@@ -1,21 +1,27 @@
 package gogen
 
 import (
+	_ "embed"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
 	"github.com/zeromicro/go-zero/tools/goctl/config"
 )
 
 const (
-	Internal      = "internal/"
-	TypesPacket   = "types"
-	ConfigDir     = internal + "config"
-	ContextDir    = internal + "svc"
-	HandlerDir    = internal + "handler"
-	LogicDir      = internal + "logic"
-	MiddlewareDir = internal + "middleware"
-	TypesDir      = internal + typesPacket
-	GroupProperty = "group"
+	Internal          = "internal/"
+	TypesPacket       = "types"
+	ConfigDir         = internal + "config"
+	ContextDir        = internal + "svc"
+	HandlerDir        = internal + "handler"
+	LogicDir          = internal + "logic"
+	MiddlewareDir     = internal + "middleware"
+	TypesDir          = internal + typesPacket
+	GroupProperty     = "group"
+	CategoryE         = category
+	TypesTemplateFile = typesTemplateFile
 )
+
+//go:embed types.tpl
+var TypesTemplate string
 
 func GetLogicName(route spec.Route) string {
 	return getLogicName(route)
