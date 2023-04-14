@@ -199,21 +199,47 @@ func mergeRouters(group *spec.Group, newRouter ...spec.Route) {
 	}
 }
 
+func arrRemove[T any](slice []T, i int) []T {
+	copy(slice[i:], slice[i+1:])
+	return slice[:len(slice)-1]
+}
+
 func mergeMembers(reqType spec.DefineStruct, newMembers []spec.Member) []spec.Member {
 	prevMemberMap := arrfn.ToMap(reqType.Members, func(m spec.Member) (string, spec.Member) {
 		return m.Name, m
 	})
 
-	for i := range newMembers {
-		member := newMembers[i]
-		if prevMember, ok := prevMemberMap[member.Name]; ok {
-			newMembers[i].Tag = prevMember.Tag
-			newMembers[i].Comment = prevMember.Comment
-			newMembers[i].Docs = prevMember.Docs
+	var copyNewMembers = make([]spec.Member, len(newMembers))
+	var reqTypeMembers = make([]spec.Member, len(reqType.Members))
+
+	copy(copyNewMembers, newMembers)
+	copy(reqTypeMembers, reqType.Members)
+
+	for _, v := range copyNewMembers {
+		if _, ok := prevMemberMap[v.Name]; !ok {
+			reqTypeMembers = append(reqTypeMembers, v)
 		}
 	}
 
-	return newMembers
+	var sortMembers []spec.Member
+
+	for i := 0; i < len(reqTypeMembers); i++ {
+		v := reqTypeMembers[i]
+		for _, x := range copyNewMembers {
+			if v.Name == x.Name {
+				sortMembers = append(sortMembers, v)
+				reqTypeMembers = arrRemove(reqTypeMembers, i)
+				i--
+				break
+			}
+		}
+	}
+
+	for _, v := range reqTypeMembers {
+		sortMembers = append(sortMembers, v)
+	}
+
+	return sortMembers
 }
 func mapColToMember(t *model.Table, mapTag func(name string, comment string) string, skipPri bool) ([]spec.Member, *parser.Primary, error) {
 	table, err := parser.ConvertDataType(t, true)
