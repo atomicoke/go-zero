@@ -27,10 +27,12 @@ var (
 )
 
 func sortFunc[K comparable](m map[K]int) func(key K) int {
+	v := 100000
 	return func(key K) int {
 		i, ok := m[key]
 		if !ok {
-			return 100000
+			v++
+			return v
 		}
 		return i
 	}
