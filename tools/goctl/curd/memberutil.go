@@ -59,6 +59,17 @@ func pageRespItemsMembers(members []spec.Member, pk *parser.Primary) []spec.Memb
 	return membersAndPk(members, pk)
 }
 
+/*
+
+ {{ if eq .Type.Name "string"  }}
+            Eq(m.Fields().{{.Name}},req.{{.Name}}).
+       {{end}}
+       {{ else if eq .Type.Name "int64"  }}
+            EqOn(m.Fields().{{.Name}} != 0,m.Fields().{{.Name}},req.{{.Name}}).
+       {{end}}
+
+*/
+
 func pageRespMembers(prefix string) ([]spec.Member, string) {
 	prefix = strcase.ToCamel(prefix)
 	name := prefix + "PageItem"
@@ -78,5 +89,5 @@ func pageRespMembers(prefix string) ([]spec.Member, string) {
 			Type: spec.PrimitiveType{RawName: "int64"},
 			Tag:  mapJsonTag("total", "总数"),
 		},
-	}, spec.Member{Name: "List", Type: spec.ArrayType{RawName: "[]" + name}, Tag: mapJsonTag("list", "列表数据")}), name
+	}, spec.Member{Name: "List", Type: spec.DefineStruct{RawName: "[]" + name}, Tag: mapJsonTag("list", "列表数据")}), name
 }
