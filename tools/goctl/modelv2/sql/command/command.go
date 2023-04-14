@@ -2,6 +2,7 @@ package command
 
 import (
 	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/tools/goctl/model/sql/types"
 	"path/filepath"
 	"strings"
 
@@ -55,6 +56,8 @@ var (
 	VarStringSliceIgnoreColumns []string
 	// serviceContext 文件的目录绝对路径
 	VarStringServiceContextDir string
+	// new model 的参数
+	VarStringModelArg string
 )
 
 var errNotMatched = errors.New("sql not matched")
@@ -89,16 +92,17 @@ func MysqlDDL(_ *cobra.Command, _ []string) error {
 		return errors.New("service context dir is empty")
 	}
 
-	arg := ddlArg{
-		svcDir:        VarStringServiceContextDir,
-		src:           src,
-		dir:           dir,
-		cfg:           cfg,
-		cache:         cache,
-		idea:          idea,
-		database:      database,
-		strict:        VarBoolStrict,
-		ignoreColumns: mergeColumns(VarStringSliceIgnoreColumns),
+	arg := types.DataSourceArg{
+		SvcDir:        VarStringServiceContextDir,
+		Src:           src,
+		Dir:           dir,
+		Cfg:           cfg,
+		Cache:         cache,
+		Idea:          idea,
+		Database:      database,
+		Strict:        VarBoolStrict,
+		IgnoreColumns: mergeColumns(VarStringSliceIgnoreColumns),
+		ModelArg:      VarStringModelArg,
 	}
 	return fromDDL(arg)
 }
@@ -135,16 +139,17 @@ func MySqlDataSource(_ *cobra.Command, _ []string) error {
 		return errors.New("service context dir is empty")
 	}
 
-	arg := dataSourceArg{
-		svcDir:        VarStringServiceContextDir,
-		url:           url,
-		dir:           dir,
-		tablePat:      patterns,
-		cfg:           cfg,
-		cache:         cache,
-		idea:          idea,
-		strict:        VarBoolStrict,
-		ignoreColumns: mergeColumns(VarStringSliceIgnoreColumns),
+	arg := types.DataSourceArg{
+		SvcDir:        VarStringServiceContextDir,
+		Url:           url,
+		Dir:           dir,
+		TablePat:      patterns,
+		Cfg:           cfg,
+		Cache:         cache,
+		Idea:          idea,
+		Strict:        VarBoolStrict,
+		IgnoreColumns: mergeColumns(VarStringSliceIgnoreColumns),
+		ModelArg:      VarStringModelArg,
 	}
 	return fromMysqlDataSource(arg)
 }
@@ -160,32 +165,8 @@ func mergeColumns(columns []string) []string {
 	return set.KeysStr()
 }
 
-type pattern map[string]struct{}
-
-func (p pattern) Match(s string) bool {
-	for v := range p {
-		match, err := filepath.Match(v, s)
-		if err != nil {
-			console.Error("%+v", err)
-			continue
-		}
-		if match {
-			return true
-		}
-	}
-	return false
-}
-
-func (p pattern) list() []string {
-	var ret []string
-	for v := range p {
-		ret = append(ret, v)
-	}
-	return ret
-}
-
-func parseTableList(tableValue []string) pattern {
-	tablePattern := make(pattern)
+func parseTableList(tableValue []string) types.Pattern {
+	tablePattern := make(types.Pattern)
 	for _, v := range tableValue {
 		fields := strings.FieldsFunc(v, func(r rune) bool {
 			return r == ','
@@ -229,44 +210,24 @@ func PostgreSqlDataSource(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	arg := &postgreSqlArg{
-		src:           url,
-		dir:           dir,
-		cfg:           cfg,
-		cache:         cache,
-		idea:          idea,
-		database:      schema,
-		strict:        VarBoolStrict,
-		ignoreColumns: mergeColumns(VarStringSliceIgnoreColumns),
-		svcDir:        VarStringServiceContextDir,
+	arg := types.DataSourceArg{
+		Src:           url,
+		Dir:           dir,
+		Cfg:           cfg,
+		Cache:         cache,
+		Idea:          idea,
+		Database:      schema,
+		Strict:        VarBoolStrict,
+		IgnoreColumns: mergeColumns(VarStringSliceIgnoreColumns),
+		SvcDir:        VarStringServiceContextDir,
 	}
 
 	return fromPostgreSqlDataSource(arg, pattern)
 }
 
-type postgreSqlArg struct {
-	src, dir      string
-	cfg           *config.Config
-	cache, idea   bool
-	database      string
-	strict        bool
-	ignoreColumns []string
-	svcDir        string
-}
-
-type ddlArg struct {
-	src, dir      string
-	cfg           *config.Config
-	cache, idea   bool
-	database      string
-	strict        bool
-	ignoreColumns []string
-	svcDir        string
-}
-
-func fromDDL(arg ddlArg) error {
-	log := console.NewConsole(arg.idea)
-	src := strings.TrimSpace(arg.src)
+func fromDDL(arg types.DataSourceArg) error {
+	log := console.NewConsole(arg.Idea)
+	src := strings.TrimSpace(arg.Src)
 	if len(src) == 0 {
 		return errors.New("expected path or path globbing patterns, but nothing found")
 	}
@@ -280,14 +241,14 @@ func fromDDL(arg ddlArg) error {
 		return errNotMatched
 	}
 
-	generator, err := gen.NewDefaultGenerator(arg.dir, arg.cfg,
-		gen.WithConsoleOption(log), gen.WithIgnoreColumns(arg.ignoreColumns))
+	generator, err := gen.NewDefaultGenerator(arg.Dir, arg.Cfg,
+		gen.WithConsoleOption(log), gen.WithIgnoreColumns(arg.IgnoreColumns))
 	if err != nil {
 		return err
 	}
 
 	for _, file := range files {
-		err = generator.StartFromDDL(file, arg.cache, arg.strict, arg.database)
+		err = generator.StartFromDDL(file, arg.Cache, arg.Strict, arg.Database)
 		if err != nil {
 			return err
 		}
@@ -297,34 +258,36 @@ func fromDDL(arg ddlArg) error {
 }
 
 type dataSourceArg struct {
+	src           string
 	url, dir      string
-	tablePat      pattern
+	tablePat      types.Pattern
 	cfg           *config.Config
 	cache, idea   bool
 	strict        bool
 	ignoreColumns []string
 	svcDir        string
+	database      string
 }
 
-func fromMysqlDataSource(arg dataSourceArg) error {
-	log := console.NewConsole(arg.idea)
-	if len(arg.url) == 0 {
+func fromMysqlDataSource(arg types.DataSourceArg) error {
+	log := console.NewConsole(arg.Idea)
+	if len(arg.Url) == 0 {
 		log.Error("%v", "expected data source of mysql, but nothing found")
 		return nil
 	}
 
-	if len(arg.tablePat) == 0 {
+	if len(arg.TablePat) == 0 {
 		log.Error("%v", "expected table or table globbing patterns, but nothing found")
 		return nil
 	}
 
-	dsn, err := mysql.ParseDSN(arg.url)
+	dsn, err := mysql.ParseDSN(arg.Url)
 	if err != nil {
 		return err
 	}
 
 	logx.Disable()
-	databaseSource := strings.TrimSuffix(arg.url, "/"+dsn.DBName) + "/information_schema"
+	databaseSource := strings.TrimSuffix(arg.Url, "/"+dsn.DBName) + "/information_schema"
 	db := sqlx.NewMysql(databaseSource)
 	im := model.NewInformationSchemaModel(db)
 
@@ -335,7 +298,7 @@ func fromMysqlDataSource(arg dataSourceArg) error {
 
 	matchTables := make(map[string]*model.Table)
 	for _, item := range tables {
-		if !arg.tablePat.Match(item) {
+		if !arg.TablePat.Match(item) {
 			continue
 		}
 
@@ -356,23 +319,21 @@ func fromMysqlDataSource(arg dataSourceArg) error {
 		return errors.New("no tables matched")
 	}
 
-	generator, err := gen.NewDefaultGenerator(arg.dir, arg.cfg,
-		gen.WithConsoleOption(log), gen.WithIgnoreColumns(arg.ignoreColumns))
+	generator, err := gen.NewDefaultGenerator(arg.Dir, arg.Cfg,
+		gen.WithConsoleOption(log), gen.WithIgnoreColumns(arg.IgnoreColumns))
 	if err != nil {
 		return err
 	}
 
-	return generator.StartFromInformationSchema(matchTables, arg.cache, arg.strict, arg.svcDir)
+	return generator.StartFromInformationSchema(matchTables, arg)
 }
 
-func fromPostgreSqlDataSource(arg *postgreSqlArg, pattern string) error {
-	url := strings.TrimSpace(arg.src)
-	dir := strings.TrimSpace(arg.dir)
-	schema := strings.TrimSpace(arg.database)
-	cfg := arg.cfg
-	cache := arg.cache
-	idea := arg.idea
-	strict := arg.strict
+func fromPostgreSqlDataSource(arg types.DataSourceArg, pattern string) error {
+	url := strings.TrimSpace(arg.Src)
+	dir := strings.TrimSpace(arg.Dir)
+	schema := strings.TrimSpace(arg.Database)
+	cfg := arg.Cfg
+	idea := arg.Idea
 
 	log := console.NewConsole(idea)
 	if len(url) == 0 {
@@ -425,5 +386,5 @@ func fromPostgreSqlDataSource(arg *postgreSqlArg, pattern string) error {
 		return err
 	}
 
-	return generator.StartFromInformationSchema(matchTables, cache, strict, arg.svcDir)
+	return generator.StartFromInformationSchema(matchTables, arg)
 }

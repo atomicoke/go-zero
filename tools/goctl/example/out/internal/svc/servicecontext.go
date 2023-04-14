@@ -3,12 +3,12 @@ package svc
 import (
 	"dm-admin/api/admin/internal/config"
 	"dm-admin/api/admin/internal/middleware"
-	"dm-admin/api/admin/internal/model"
 	"dm-admin/common/asynqmq"
 	"dm-admin/common/flow"
 	"dm-admin/common/mid"
 	"dm-admin/common/thirdparty/pay"
 	"dm-admin/common/utils/userflow"
+	"github.com/zeromicro/go-zero/tools/goctl/example/out/internal/model"
 
 	"dm.com/toolx/arr"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -24,6 +24,7 @@ type ServiceContext struct {
 	DeleteVerifyCode               rest.Middleware
 	LoginLog                       rest.Middleware
 	SysUserModel                   model.SysUserModel
+	AppLiveModel                   model.AppLiveModel
 	SysDictionaryModel             model.SysDictionaryModel
 	SysLogModel                    model.SysLogModel
 	SysMenuModel                   model.SysMenuModel
@@ -118,6 +119,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Redis:                          redisClient,
 		PermMenuAuth:                   middleware.NewPermMenuAuthMiddleware(redisClient).Handle,
 		SysUserModel:                   model.NewSysUserModel(mysqlConn, c.Cache),
+		AppLiveModel:                   model.NewAppLiveModel(mysqlConn, c.Cache),
 		SysDictionaryModel:             model.NewSysDictionaryModel(mysqlConn, c.Cache),
 		SysLogModel:                    model.NewSysLogModel(mysqlConn, c.Cache),
 		SysMenuModel:                   model.NewSysMenuModel(mysqlConn, c.Cache),

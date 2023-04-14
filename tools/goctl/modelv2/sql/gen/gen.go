@@ -2,8 +2,10 @@ package gen
 
 import (
 	"bytes"
+	"dm.com/toolx/fn/strfn"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/tools/goctl/model/sql/types"
 	"io/ioutil"
 	"os"
 	"path"
@@ -149,31 +151,31 @@ func writeSvcFile(dir string, content string) error {
 }
 
 // 自动生成newModel
-func genNewModelToSvc(svcDir string, name string) error {
+func genNewModelToSvc(svcDir string, name string, arg string) error {
 	oldContent, err := readSvcFile(svcDir)
 	if err != nil {
 		return err
 	}
 	// 正则判断是否已经存在
 	{
-		reg := regexp.MustCompile(fmt.Sprintf(`model.New%sModel\(mysqlConn, c.Cache\),`, name))
+		reg := regexp.MustCompile(fmt.Sprintf(`model\.New%sModel\(%s\),`, name, arg))
 		if reg.MatchString(oldContent) {
 			return nil
 		}
 	}
 	// 用正则替换一个相似的
 	{
-		reg := regexp.MustCompile(`(\w+Model\s*:\s*model.New(\w+)Model\(mysqlConn, c.Cache\),)`)
+		reg := regexp.MustCompile(fmt.Sprintf(`(\w+Model\s*:\s*model\.New(\w+)Model\(%s\),)`, arg))
 		newLine := fmt.Sprintf(`%sModel: model.New%sModel(mysqlConn, c.Cache),`, name, name)
-		newContent := reg.ReplaceAllString(oldContent, fmt.Sprintf(`$1%s`, "\n\t\t"+newLine))
+		newContent := strfn.RegReplaceN(reg, oldContent, fmt.Sprintf(`$1%s`, "\n\t\t"+newLine), 1)
 
 		oldContent = newContent
 	}
 
 	// 用正则替换一个相似的成员
 	{
-		reg := regexp.MustCompile(`(\w+Model(\s+)model.\w+Model)`)
-		newContent := reg.ReplaceAllString(oldContent, fmt.Sprintf(`$1%s%sModel$2 model.%sModel`, "\n\t", name, name))
+		reg := regexp.MustCompile(`(\w+Model(\s+)model\.\w+Model)`)
+		newContent := strfn.RegReplaceN(reg, oldContent, fmt.Sprintf(`$1%s%sModel$2 model.%sModel`, "\n\t", name, name), 1)
 
 		oldContent = newContent
 	}
@@ -181,7 +183,11 @@ func genNewModelToSvc(svcDir string, name string) error {
 	return writeSvcFile(svcDir, oldContent)
 }
 
-func (g *defaultGenerator) StartFromInformationSchema(tables map[string]*model.Table, withCache, strict bool, svcDir string) error {
+func (g *defaultGenerator) StartFromInformationSchema(tables map[string]*model.Table, arg types.DataSourceArg) error {
+	strict := arg.Strict
+	withCache := arg.Cache
+	svcDir := arg.SvcDir
+
 	m := make(map[string]*codeTuple)
 	for _, each := range tables {
 		table, err := parser.ConvertDataType(each, strict)
@@ -198,7 +204,7 @@ func (g *defaultGenerator) StartFromInformationSchema(tables map[string]*model.T
 			return err
 		}
 
-		err = genNewModelToSvc(svcDir, table.Name.ToCamel())
+		err = genNewModelToSvc(svcDir, table.Name.ToCamel(), arg.ModelArg)
 		if err != nil {
 			return err
 		}

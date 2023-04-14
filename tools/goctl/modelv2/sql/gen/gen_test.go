@@ -2,11 +2,13 @@ package gen
 
 import (
 	"database/sql"
+	"dm.com/toolx/fn/strfn"
 	_ "embed"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -196,4 +198,12 @@ func Test_genPublicModel(t *testing.T) {
 	assert.True(t, strings.Contains(code, "TestUserModel interface {\n\t\ttestUserModel\n\t}\n"))
 	assert.True(t, strings.Contains(code, "customTestUserModel struct {\n\t\t*defaultTestUserModel\n\t}\n"))
 	assert.True(t, strings.Contains(code, "func NewTestUserModel(conn sqlx.SqlConn) TestUserModel {"))
+}
+
+func Test_genNewModelToSvc(t *testing.T) {
+	var str = " abc abc"
+
+	var reg = regexp.MustCompile(`(\s)(abc)`)
+	var result = strfn.RegReplaceN(reg, str, `x+$1+x--$2--`, 2)
+	t.Log(result)
 }

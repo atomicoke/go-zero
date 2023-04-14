@@ -2,6 +2,7 @@ package command
 
 import (
 	_ "embed"
+	"github.com/zeromicro/go-zero/tools/goctl/model/sql/types"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -28,24 +29,24 @@ func TestFromDDl(t *testing.T) {
 	err := gen.Clean()
 	assert.Nil(t, err)
 
-	err = fromDDL(ddlArg{
-		src:      "./user.sql",
-		dir:      pathx.MustTempDir(),
-		cfg:      cfg,
-		cache:    true,
-		database: "go-zero",
-		strict:   false,
+	err = fromDDL(types.DataSourceArg{
+		Src:      "./user.sql",
+		Dir:      pathx.MustTempDir(),
+		Cfg:      cfg,
+		Cache:    true,
+		Database: "go-zero",
+		Strict:   false,
 	})
 	assert.Equal(t, errNotMatched, err)
 
 	// case dir is not exists
 	unknownDir := filepath.Join(pathx.MustTempDir(), "test", "user.sql")
-	err = fromDDL(ddlArg{
-		src:      unknownDir,
-		dir:      pathx.MustTempDir(),
-		cfg:      cfg,
-		cache:    true,
-		database: "go_zero",
+	err = fromDDL(types.DataSourceArg{
+		Src:      unknownDir,
+		Dir:      pathx.MustTempDir(),
+		Cfg:      cfg,
+		Cache:    true,
+		Database: "go_zero",
 	})
 	assert.True(t, func() bool {
 		switch err.(type) {
@@ -57,11 +58,11 @@ func TestFromDDl(t *testing.T) {
 	}())
 
 	// case empty src
-	err = fromDDL(ddlArg{
-		dir:      pathx.MustTempDir(),
-		cfg:      cfg,
-		cache:    true,
-		database: "go_zero",
+	err = fromDDL(types.DataSourceArg{
+		Dir:      pathx.MustTempDir(),
+		Cfg:      cfg,
+		Cache:    true,
+		Database: "go_zero",
 	})
 	if err != nil {
 		assert.Equal(t, "expected path or path globbing patterns, but nothing found", err.Error())
@@ -94,12 +95,12 @@ func TestFromDDl(t *testing.T) {
 
 	filename := filepath.Join(tempDir, "usermodel.go")
 	fromDDL := func(db string) {
-		err = fromDDL(ddlArg{
-			src:      filepath.Join(tempDir, "user*.sql"),
-			dir:      tempDir,
-			cfg:      cfg,
-			cache:    true,
-			database: db,
+		err = fromDDL(types.DataSourceArg{
+			Src:      filepath.Join(tempDir, "user*.sql"),
+			Dir:      tempDir,
+			Cfg:      cfg,
+			Cache:    true,
+			Database: db,
 		})
 		assert.Nil(t, err)
 
@@ -117,7 +118,7 @@ func TestFromDDl(t *testing.T) {
 func Test_parseTableList(t *testing.T) {
 	testData := []string{"foo", "b*", "bar", "back_up", "foo,bar,b*"}
 	patterns := parseTableList(testData)
-	actual := patterns.list()
+	actual := patterns.List()
 	expected := []string{"foo", "b*", "bar", "back_up"}
 	sort.Slice(actual, func(i, j int) bool {
 		return actual[i] > actual[j]

@@ -70,6 +70,7 @@ func init() {
 	mysqlCmd.PersistentFlags().StringSliceVarPWithDefaultValue(&command.VarStringSliceIgnoreColumns, "ignore-columns", "i", []string{"create_at", "created_at", "create_time", "update_at", "updated_at", "update_time"})
 
 	mysqlCmd.PersistentFlags().StringVar(&command.VarStringServiceContextDir, "svcdir")
+	mysqlCmd.PersistentFlags().StringVar(&command.VarStringModelArg, "modelargs")
 
 	mysqlCmd.AddCommand(datasourceCmd, ddlCmd)
 	pgCmd.AddCommand(pgDatasourceCmd)
