@@ -35,9 +35,8 @@ func (l *{{.logic}}) sql({{.request}}) squirrel.DeleteBuilder {
     )
     return sbuilder.BuildDelete(m){{- range .reqMembers }}.
        {{ $type := .Type.Name }}
-       Eq(f.{{.Name}}, req.{{.Name}}).
-   {{- end }}
-       Res()
+       Eq(f.{{.Name}}, req.{{.Name}})
+   {{- end }}.Res()
 }
 
 /*
