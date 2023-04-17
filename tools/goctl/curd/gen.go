@@ -9,8 +9,10 @@ import (
 	"github.com/zeromicro/go-zero/tools/goctl/config"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/gen"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/model"
+	"github.com/zeromicro/go-zero/tools/goctl/util"
 	"github.com/zeromicro/go-zero/tools/goctl/util/console"
 	"github.com/zeromicro/go-zero/tools/goctl/util/format"
+	"github.com/zeromicro/go-zero/tools/goctl/util/stringx"
 	"os"
 	"path"
 	"strings"
@@ -108,22 +110,23 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 		TemplateFile:    actionToLogicFile(route.Action),
 		BuiltinTemplate: templates[actionToLogicFile(route.Action)],
 		Data: map[string]any{
-			"pkgName":      subDir[strings.LastIndex(subDir, "/")+1:],
-			"imports":      imports,
-			"importModel":  rootPkg + "/internal/model",
-			"logic":        strings.Title(logic),
-			"function":     strings.Title(strings.TrimSuffix(logic, "Logic")),
-			"responseType": responseString,
-			"returnString": returnString,
-			"request":      requestString,
-			"route":        arr.NewMap(group.Annotation.Properties).Get("prefix", "") + route.Path,
-			"title":        arr.NewMap(route.AtDoc.Properties).Get("summary", route.AtDoc.Text),
-			"method":       route.Method,
-			"modelName":    modelName,
-			"entityName":   entityName,
-			"reqMembers":   reqType.Members,
-			"respMembers":  respType.Members,
-			"resp":         "&" + gogen.TypesPacket + "." + respType.Name(),
+			"pkgName":                   subDir[strings.LastIndex(subDir, "/")+1:],
+			"imports":                   imports,
+			"importModel":               rootPkg + "/internal/model",
+			"logic":                     strings.Title(logic),
+			"function":                  strings.Title(strings.TrimSuffix(logic, "Logic")),
+			"responseType":              responseString,
+			"returnString":              returnString,
+			"request":                   requestString,
+			"route":                     arr.NewMap(group.Annotation.Properties).Get("prefix", "") + route.Path,
+			"title":                     arr.NewMap(route.AtDoc.Properties).Get("summary", route.AtDoc.Text),
+			"method":                    route.Method,
+			"modelName":                 modelName,
+			"entityName":                entityName,
+			"reqMembers":                reqType.Members,
+			"respMembers":               respType.Members,
+			"resp":                      "&" + gogen.TypesPacket + "." + respType.Name(),
+			"lowerStartCamelPrimaryKey": util.EscapeGolangKeyword(stringx.From(stringx.From(tableInfo.PrimaryKey.Name).ToCamel()).Untitle()),
 		},
 		FuncMap: map[string]any{
 			"IsTime": isTime,
