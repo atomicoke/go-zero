@@ -166,21 +166,20 @@ func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.A
 					}
 				}
 			}
+		}
 
+		if respType, ok = types[respTypeName]; !ok {
+			respType = spec.DefineStruct{
+				RawName: respTypeName,
+				Members: respMember(newMembers, pk),
+				Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
+			}
+			apiSpec.Types = append(apiSpec.Types, respType)
 		} else {
-			if respType, ok = types[respTypeName]; !ok {
-				respType = spec.DefineStruct{
-					RawName: respTypeName,
-					Members: respMember(newMembers, pk),
-					Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
-				}
-				apiSpec.Types = append(apiSpec.Types, respType)
-			} else {
-				respType.Members = mergeMembers(respType, respMember(newMembers, pk))
-				for i := range apiSpec.Types {
-					if apiSpec.Types[i].Name() == respTypeName {
-						apiSpec.Types[i] = respType
-					}
+			respType.Members = mergeMembers(respType, respMember(newMembers, pk))
+			for i := range apiSpec.Types {
+				if apiSpec.Types[i].Name() == respTypeName {
+					apiSpec.Types[i] = respType
 				}
 			}
 		}
