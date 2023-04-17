@@ -27,7 +27,7 @@ func (l *{{.logic}}) model() model.{{.modelName}} {
     return l.svcCtx.{{.modelName}}
 }
 
-// get sql builder
+// delete sql builder
 func (l *{{.logic}}) sql({{.request}}) squirrel.DeleteBuilder {
     var (
     	m = l.model()

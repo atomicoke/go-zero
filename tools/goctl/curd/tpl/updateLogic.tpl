@@ -26,7 +26,7 @@ func (l *{{.logic}}) model() model.{{.modelName}} {
     return l.svcCtx.{{.modelName}}
 }
 
-// get sql builder
+// update sql builder
 func (l *{{.logic}}) sql({{.request}}) *sbuilder.UpdateSql {
     var (
     	m = l.model()
