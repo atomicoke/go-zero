@@ -27,26 +27,43 @@ func (l *{{.logic}}) model() model.{{.modelName}} {
 }
 
 // page sql builder
-func (l *{{.logic}}) sql({{.request}}) *sbuilder.UpdateSql {
+func (l *{{.logic}}) sql({{.request}}) *sbuilder.Page {
     var (
     	m = l.model()
     	f = m.Fields()
     )
-    return sbuilder.Update(m){{- range .reqMembers }}.
-{{ $type := .Type.Name }}Eq(f.{{.Name}}, req.{{.Name}})
-   {{- end }}
+    return sbuilder.BuildPage("",m){{- range .reqMembers }}{{ if eq .Name "Page"}}{{ else if eq .Name "Limit"}}{{else}}.
+    Eq(f.{{.Name}}, req.{{.Name}}){{end}}{{- end }}
 }
+
+const orderBy = "{{.lowerStartCamelPrimaryKey}} DESC"
 
 /*
 @desc  {{.title}}
 @route {{.route}}
 */
 func (l *{{.logic}}) {{.function}}({{.request}}) {{.responseType}} {
-	err = l.model().UpdateCtxWithBuilder(l.ctx, l.sql(req))
+	list, total, err := l.model().Pagination(l.ctx, l.sql(req), req.Page, req.Limit,orderBy)
 	if err != nil {
 		return nil, errorx.Shadow(l, err, {{.title}})
 	}
 
-	resp = {{.resp}}{}
+	resp = {{.resp}}{
+		Total: total,
+    	Page:  req.Page,
+    	Limit: req.Limit,
+    	List:  mapList(list),
+	}
 	{{.returnString}}
+}
+
+func mapList(list []*model.{{.modelName}}) []types.{{.respItemTypeName}} {
+    var resp []types.{{.respItemTypeName}}
+    for _, item := range list {
+        v := types.{{.respItemTypeName}}{
+            
+        }
+        resp = append(resp, v)
+    }
+    return resp
 }

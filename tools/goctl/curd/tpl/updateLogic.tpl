@@ -33,7 +33,6 @@ func (l *{{.logic}}) sql({{.request}}) *sbuilder.UpdateSql {
     	f = m.Fields()
     )
     return sbuilder.Update(m){{- range .reqMembers }}.
-       {{ $type := .Type.Name }}
        Eq(f.{{.Name}}, req.{{.Name}})
    {{- end }}
 }

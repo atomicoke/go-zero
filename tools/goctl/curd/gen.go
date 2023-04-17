@@ -101,6 +101,17 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 		return false
 	}
 
+	respItemTypeName := ""
+	if route.Action == string(Page) {
+		for i := range respType.Members {
+			m := respType.Members[i]
+			if m.Name == "List" {
+				respItemTypeName = m.Type.Name()[2:]
+				break
+			}
+		}
+	}
+
 	return gogen.GenFile(gogen.FileGenConfig{
 		Dir:             dir,
 		Subdir:          subDir,
@@ -126,7 +137,9 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 			"reqMembers":                reqType.Members,
 			"respMembers":               respType.Members,
 			"resp":                      "&" + gogen.TypesPacket + "." + respType.Name(),
+			"respItemTypeName":          respItemTypeName,
 			"lowerStartCamelPrimaryKey": util.EscapeGolangKeyword(stringx.From(stringx.From(tableInfo.PrimaryKey.Name).ToCamel()).Untitle()),
+			"primaryKey":                util.EscapeGolangKeyword(stringx.From(tableInfo.PrimaryKey.Name).ToCamel()),
 		},
 		FuncMap: map[string]any{
 			"IsTime": isTime,
