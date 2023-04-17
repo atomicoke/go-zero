@@ -3,7 +3,6 @@ package curd
 import (
 	"dm.com/toolx/arr"
 	"dm.com/toolx/fn/arrfn"
-	"fmt"
 	"github.com/iancoleman/strcase"
 	"github.com/zeromicro/go-zero/tools/goctl/api/gogen"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
@@ -82,6 +81,23 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 	}
 
 	subDir := gogen.GetLogicFolderPath(group, route)
+
+	colMap := arrfn.ToMap(tableInfo.Columns, func(e *model.Column) (string, *model.Column) {
+		return strcase.ToCamel(e.Name), e
+	})
+
+	isTime := func(colName string) bool {
+		if col, ok := colMap[colName]; ok {
+			return col.DataType == "datetime" || col.DataType == "timestamp"
+		}
+		return false
+	}
+	isNull := func(colName string) bool {
+		if col, ok := colMap[colName]; ok {
+			return col.IsNullAble == "YES"
+		}
+		return false
+	}
 	return gogen.GenFile(gogen.FileGenConfig{
 		Dir:             dir,
 		Subdir:          subDir,
@@ -109,17 +125,10 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 			"resp":         "&" + gogen.TypesPacket + "." + respType.Name(),
 		},
 		FuncMap: map[string]any{
-			"IsTime": func(colName string) bool {
-				for i := range tableInfo.Columns {
-					if strcase.ToCamel(tableInfo.Columns[i].Name) == colName {
-						b := tableInfo.Columns[i].DataType == "datetime"
-						if b {
-							fmt.Println("is time: ", colName)
-						}
-						return b
-					}
-				}
-				return false
+			"IsTime": isTime,
+			"IsNull": isNull,
+			"IsNullTime": func(colName string) bool {
+				return isTime(colName) && isNull(colName)
 			},
 		},
 	})

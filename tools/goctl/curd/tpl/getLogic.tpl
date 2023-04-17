@@ -4,8 +4,9 @@ import (
     "{{.importModel}}"
     "dm-admin/common/sbuilder"
     "dm-admin/common/errorx"
-    "dm-admin/common/utils"
+    "dm.com/toolx/mp"
     "github.com/Masterminds/squirrel"
+    "dm-admin/common/globalkey"
 
 	{{.imports}}
 )
@@ -53,7 +54,7 @@ func (l *{{.logic}}) {{.function}}({{.request}}) {{.responseType}} {
 
 	resp = {{.resp}}{
 	{{- range .respMembers }}
-	{{ if .IsTime }}{{.Name}}: utils.MapTime(entity.{{.Name}}),{{else}}{{.Name}}: entity.{{.Name}},{{end}}
+	{{ if IsNullTime .Name }}{{.Name}}: mp.NullTimeToString(entity.{{.Name}},globalkey.SysDateFormat),{{else if IsTime .Name}}{{.Name}}: mp.TimeToString(entity.{{.Name}},globalkey.SysDateFormat),{{else}}{{.Name}}: entity.{{.Name}},{{end}}
     {{- end }}
 	}
 	{{.returnString}}
