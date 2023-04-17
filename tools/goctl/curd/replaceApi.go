@@ -151,11 +151,11 @@ func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.A
 			}
 			itemsMembers := pageRespItemsMembers(newMembers, pk)
 			itemsType := spec.DefineStruct{}
-			if respType, ok = types[itemTypeName]; !ok {
+			if _, ok = types[itemTypeName]; !ok {
 				itemsType = spec.DefineStruct{
 					RawName: itemTypeName,
 					Members: itemsMembers,
-					Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
+					Docs:    []string{fmt.Sprintf("%s %s response item", action, desc)},
 				}
 				apiSpec.Types = append(apiSpec.Types, itemsType)
 			} else {
@@ -166,20 +166,20 @@ func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.A
 					}
 				}
 			}
-		}
-
-		if respType, ok = types[respTypeName]; !ok {
-			respType = spec.DefineStruct{
-				RawName: respTypeName,
-				Members: respMember(newMembers, pk),
-				Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
-			}
-			apiSpec.Types = append(apiSpec.Types, respType)
 		} else {
-			respType.Members = mergeMembers(respType, respMember(newMembers, pk))
-			for i := range apiSpec.Types {
-				if apiSpec.Types[i].Name() == respTypeName {
-					apiSpec.Types[i] = respType
+			if respType, ok = types[respTypeName]; !ok {
+				respType = spec.DefineStruct{
+					RawName: respTypeName,
+					Members: respMember(newMembers, pk),
+					Docs:    []string{fmt.Sprintf("%s %s response", action, desc)},
+				}
+				apiSpec.Types = append(apiSpec.Types, respType)
+			} else {
+				respType.Members = mergeMembers(respType, respMember(newMembers, pk))
+				for i := range apiSpec.Types {
+					if apiSpec.Types[i].Name() == respTypeName {
+						apiSpec.Types[i] = respType
+					}
 				}
 			}
 		}
