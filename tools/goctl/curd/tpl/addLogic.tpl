@@ -30,8 +30,8 @@ func (l *{{.logic}}) model() model.{{.modelName}} {
 }
 
 // build model.{{.modelName}}
-func (l *{{.logic}}) buildEntity({{.request}}) model.{{.entityName}} {
-    return model.TestThinkRechargeV2{ {{- range .reqMembers }}
+func (l *{{.logic}}) buildEntity({{.request}}) *model.{{.entityName}} {
+    return &model.TestThinkRechargeV2{ {{- range .reqMembers }}
         {{ if IsNullTime .Name }} {{.Name}}: mp.StringToNullTime(req.{{.Name}},globalkey.SysDateFormat), {{ else if IsTime .Name }} {{.Name}}: mp.StringToTime(req.{{.Name}},globalkey.SysDateFormat),{{else}} {{.Name}}: req.{{.Name}},{{end}}
    {{- end }}
     }
@@ -42,15 +42,19 @@ func (l *{{.logic}}) buildEntity({{.request}}) model.{{.entityName}} {
 @route {{.route}}
 */
 func (l *{{.logic}}) {{.function}}({{.request}}) {{.responseType}} {
-	entity, err := l.model().FindOneByQuery(l.ctx, l.sql(req))
+    insert, err := l.model().Insert(l.ctx, nil, l.buildEntity(req))
 	if err != nil {
 		return nil, errorx.Shadow(l, err, {{.title}})
 	}
+	Id, err := insert.LastInsertId()
+	if err != nil {
+		return nil, errorx.Shadow(l, err,  {{.title}})
+	}
 
 	resp = {{.resp}}{
-	{{- range .respMembers }}
-	    {{ if .IsTime }}{{.Name}}: utils.MapTime(entity.{{.Name}}),{{else}}{{.Name}}: entity.{{.Name}},{{end}}
-    {{- end }}
+        {{- range .respMembers }}
+        {{.Name}}: {{.Name}},
+        {{- end }}
 	}
 	{{.returnString}}
 }

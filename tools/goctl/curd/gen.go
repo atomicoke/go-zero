@@ -98,6 +98,7 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 		}
 		return false
 	}
+
 	return gogen.GenFile(gogen.FileGenConfig{
 		Dir:             dir,
 		Subdir:          subDir,
