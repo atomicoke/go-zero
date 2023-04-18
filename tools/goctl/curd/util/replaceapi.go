@@ -141,7 +141,9 @@ func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.A
 				}
 			}
 			itemsMembers := pageRespItemsMembers(newMembers, pk)
-			itemsType := spec.DefineStruct{}
+			itemsType := spec.DefineStruct{
+				RawName: itemTypeName,
+			}
 			if _, ok = types[itemTypeName]; !ok {
 				itemsType = spec.DefineStruct{
 					RawName: itemTypeName,

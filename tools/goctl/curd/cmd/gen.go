@@ -85,9 +85,8 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 	if apiSpec, err = curdutil.ReplaceApi(apiSpec, cfg, tableInfo); err != nil {
 		return err
 	}
-
 	logx.Must(genModel(dir, cfg, table, tableInfo))
-	logx.Must(genTypes(dir, cfg, apiSpec))
+	logx.Must(genTypes(dir, cfg, apiSpec, tableInfo.Table))
 	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
 	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec, table, tableInfo))
 	logx.Must(os.WriteFile(apiFile, []byte(curdutil.ApiSpecToString(apiSpec)), 0666))
@@ -230,13 +229,13 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 	})
 }
 
-func genTypes(dir string, cfg *config.Config, api *spec.ApiSpec) error {
+func genTypes(dir string, cfg *config.Config, api *spec.ApiSpec, prefix string) error {
 	val, err := gogen.BuildTypes(api.Types)
 	if err != nil {
 		return err
 	}
 
-	typeFilename, err := format.FileNamingFormat(cfg.NamingFormat, "curd_types")
+	typeFilename, err := format.FileNamingFormat(cfg.NamingFormat, "curd_types_"+prefix)
 	if err != nil {
 		return err
 	}
