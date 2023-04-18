@@ -13,6 +13,7 @@ import (
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/model"
 	"github.com/zeromicro/go-zero/tools/goctl/pkg/golang"
 	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
+	"os"
 	"strings"
 )
 
@@ -90,8 +91,7 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 	logx.Must(genTypes(dir, cfg, apiSpec))
 	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
 	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec, table, tableInfo))
-
-	//fmt.Println(apiSpecToString(apiSpec))
+	logx.Must(os.WriteFile(apiFile, []byte(apiSpecToString(apiSpec)), 0666))
 	return nil
 }
 
