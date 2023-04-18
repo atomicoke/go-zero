@@ -1,4 +1,4 @@
-package curd
+package util
 
 import (
 	"github.com/iancoleman/strcase"

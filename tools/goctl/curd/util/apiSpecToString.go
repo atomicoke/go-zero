@@ -1,4 +1,4 @@
-package curd
+package util
 
 import (
 	"dm.com/toolx/arr"
@@ -38,7 +38,7 @@ func sortFunc[K comparable](m map[K]int) func(key K) int {
 	}
 }
 
-func apiSpecToString(apiSpec *spec.ApiSpec) string {
+func ApiSpecToString(apiSpec *spec.ApiSpec) string {
 	sb := &strings.Builder{}
 	sb.WriteString(fmt.Sprintf("syntax = %s\n\n", apiSpec.Syntax.Version))
 

@@ -1,4 +1,4 @@
-package curd
+package util
 
 import (
 	"dm.com/toolx/arr"
@@ -8,6 +8,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
 	"github.com/zeromicro/go-zero/tools/goctl/config"
+	"github.com/zeromicro/go-zero/tools/goctl/curd/tpl"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/model"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/parser"
 	utilformat "github.com/zeromicro/go-zero/tools/goctl/util/format"
@@ -17,17 +18,7 @@ import (
 
 const prefixKey = "curdPrefix"
 
-type action string
-
-const (
-	Add    action = "add"
-	Update action = "update"
-	Delete action = "delete"
-	Page   action = "page"
-	Get    action = "get"
-)
-
-func replaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
+func ReplaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (*spec.ApiSpec, error) {
 	var (
 		prefix string
 		desc   string
@@ -46,23 +37,23 @@ func replaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (
 
 	group := findServiceGroup(apiSpec)
 	builder := buildApiAndType(prefix, desc, table, apiSpec)
-	addRoute, apiSpec, err := builder(Add, "添加", "post", members, memberPk)
+	addRoute, apiSpec, err := builder(tpl.Add, "添加", "post", members, memberPk)
 	if err != nil {
 		return nil, err
 	}
-	updateRoute, apiSpec, err := builder(Update, "更新", "post", membersAndPk, emptyMembers)
+	updateRoute, apiSpec, err := builder(tpl.Update, "更新", "post", membersAndPk, emptyMembers)
 	if err != nil {
 		return nil, err
 	}
-	deleteRoute, apiSpec, err := builder(Delete, "删除", "post", memberPk, emptyMembers)
+	deleteRoute, apiSpec, err := builder(tpl.Delete, "删除", "post", memberPk, emptyMembers)
 	if err != nil {
 		return nil, err
 	}
-	pageRoute, apiSpec, err := builder(Page, "分页", "get", pageReqMembers, pageRespItemsMembers)
+	pageRoute, apiSpec, err := builder(tpl.Page, "分页", "get", pageReqMembers, pageRespItemsMembers)
 	if err != nil {
 		return nil, err
 	}
-	getRoute, apiSpec, err := builder(Get, "获取", "get", memberPkGet, membersAndPk)
+	getRoute, apiSpec, err := builder(tpl.Get, "获取", "get", memberPkGet, membersAndPk)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +67,7 @@ func replaceGroup(group *spec.Group, apiSpec *spec.ApiSpec) *spec.ApiSpec {
 	var find = false
 	for i := range apiSpec.Service.Groups {
 		g := apiSpec.Service.Groups[i]
-		if g.GetAnnotation(category) == "true" {
+		if g.GetAnnotation(tpl.Category()) == "true" {
 			apiSpec.Service.Groups[i].Routes = group.Routes
 			find = true
 		}
@@ -99,9 +90,9 @@ var mapFormTagWithValid = func(name string, comment string, valid string) string
 }
 
 func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.ApiSpec) func(
-	action action, chinesAction, method string,
+	action tpl.Action, chinesAction, method string,
 	reqMember, respMember memberProvider) (spec.Route, *spec.ApiSpec, error) {
-	return func(action action, chinesAction, method string, reqMember, respMember memberProvider) (spec.Route, *spec.ApiSpec, error) {
+	return func(action tpl.Action, chinesAction, method string, reqMember, respMember memberProvider) (spec.Route, *spec.ApiSpec, error) {
 		var (
 			actionTitle  = stringx.From(string(action)).Title()
 			reqType      spec.DefineStruct
@@ -133,7 +124,7 @@ func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.A
 				}
 			}
 		}
-		if action == Page {
+		if action == tpl.Page {
 			respMembers, itemTypeName := pageRespMembers(prefix)
 			respType = spec.DefineStruct{
 				RawName: respTypeName,

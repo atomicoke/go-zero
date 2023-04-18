@@ -1,22 +1,98 @@
-package curd
+package cmd
 
 import (
 	"dm.com/toolx/arr"
 	"dm.com/toolx/fn/arrfn"
+	"errors"
 	"github.com/iancoleman/strcase"
+	"github.com/spf13/cobra"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/tools/goctl/api/gogen"
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
 	"github.com/zeromicro/go-zero/tools/goctl/config"
+	"github.com/zeromicro/go-zero/tools/goctl/curd/tpl"
+	curdutil "github.com/zeromicro/go-zero/tools/goctl/curd/util"
+	"github.com/zeromicro/go-zero/tools/goctl/internal/cobrax"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/gen"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/model"
+	"github.com/zeromicro/go-zero/tools/goctl/pkg/golang"
 	"github.com/zeromicro/go-zero/tools/goctl/util"
 	"github.com/zeromicro/go-zero/tools/goctl/util/console"
 	"github.com/zeromicro/go-zero/tools/goctl/util/format"
+	"github.com/zeromicro/go-zero/tools/goctl/util/pathx"
 	"github.com/zeromicro/go-zero/tools/goctl/util/stringx"
 	"os"
 	"path"
 	"strings"
+
+	apiParser "github.com/zeromicro/go-zero/tools/goctl/api/parser"
 )
+
+var (
+	Gen = cobrax.NewCommand("gen", cobrax.WithRunE(genE))
+)
+
+func init() {
+	Gen.Flags().StringVar(&api, "api")
+	Gen.Flags().StringVar(&dir, "dir")
+	Gen.Flags().StringVar(&url, "url")
+	Gen.Flags().StringVar(&table, "table")
+	Gen.Flags().StringVar(&home, "home")
+	Gen.Flags().StringVarWithDefaultValue(&style, "style", config.DefaultFormat)
+}
+
+func genE(cmd *cobra.Command, args []string) error {
+	if len(home) > 0 {
+		pathx.RegisterGoctlHome(home)
+	}
+	if len(api) == 0 {
+		return errors.New("missing -api")
+	}
+	if len(dir) == 0 {
+		return errors.New("missing -dir")
+	}
+	if len(url) == 0 {
+		return errors.New("missing -url")
+	}
+	if len(table) == 0 {
+		return errors.New("missing -table")
+	}
+	return doGenCrud(api, dir, url, table, style)
+}
+
+// doGenCrud gen crud files with api file
+func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
+	apiSpec, err := apiParser.Parse(apiFile)
+	if err != nil {
+		return err
+	}
+
+	tableInfo, err := curdutil.ParseTable(url, table)
+	if err != nil {
+		return err
+	}
+
+	cfg, err := config.NewConfig(namingStyle)
+	if err != nil {
+		return err
+	}
+	logx.Must(pathx.MkdirIfNotExist(dir))
+	rootPkg, err := golang.GetParentPackage(dir)
+	if err != nil {
+		return err
+	}
+
+	if apiSpec, err = curdutil.ReplaceApi(apiSpec, cfg, tableInfo); err != nil {
+		return err
+	}
+
+	logx.Must(genModel(dir, cfg, table, tableInfo))
+	logx.Must(genTypes(dir, cfg, apiSpec))
+	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
+	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec, table, tableInfo))
+	logx.Must(os.WriteFile(apiFile, []byte(curdutil.ApiSpecToString(apiSpec)), 0666))
+	return nil
+}
 
 func genLogic(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec, tableName string, tableInfo *model.Table) error {
 	modelName := strcase.ToCamel(tableName + "Model")
@@ -103,7 +179,7 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 
 	respItemTypeName := ""
 	var respItemMembers []spec.Member
-	if route.Action == string(Page) {
+	if route.Action == string(tpl.Page) {
 		for i := range respType.Members {
 			m := respType.Members[i]
 			if m.Name == "List" {
@@ -119,9 +195,9 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 		Subdir:          subDir,
 		Filename:        goFile + ".go",
 		TemplateName:    "logicTemplate",
-		Category:        category,
-		TemplateFile:    actionToLogicFile(route.Action),
-		BuiltinTemplate: templates[actionToLogicFile(route.Action)],
+		Category:        tpl.Category(),
+		TemplateFile:    tpl.ActionToLogicFile(route.Action),
+		BuiltinTemplate: tpl.Templates[tpl.ActionToLogicFile(route.Action)],
 		Data: map[string]any{
 			"pkgName":                   subDir[strings.LastIndex(subDir, "/")+1:],
 			"imports":                   imports,
