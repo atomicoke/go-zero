@@ -4,6 +4,8 @@ import (
     "{{.importModel}}"
     "dm-admin/common/errorx"
     "dm-admin/common/sbuilder"
+    "dm-admin/common/globalkey"
+    "dm.com/toolx/mp"
 
 	{{.imports}}
 )
@@ -57,11 +59,13 @@ func (l *{{.logic}}) {{.function}}({{.request}}) {{.responseType}} {
 	{{.returnString}}
 }
 
-func mapList(list []*model.{{.modelName}}) []types.{{.respItemTypeName}} {
+func mapList(list []*model.{{.entityName}}) []types.{{.respItemTypeName}} {
     var resp []types.{{.respItemTypeName}}
     for _, item := range list {
-        v := types.{{.respItemTypeName}}{
-            
+        v := types.{{.respItemTypeName}}{ {{ range .respItemMembers }}
+				{{.Name}}:
+                    {{ if IsNullTime .Name}} mp.NullTimeToString(item.{{.Name}},globalkey.SysDateFormat),{{ else if IsTime .Name }} mp.TimeToString(item.{{.Name}},globalkey.SysDateFormat),{{else}}item.{{.Name}},{{end}}
+			{{- end}}
         }
         resp = append(resp, v)
     }

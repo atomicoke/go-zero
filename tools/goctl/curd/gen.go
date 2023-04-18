@@ -102,11 +102,13 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 	}
 
 	respItemTypeName := ""
+	var respItemMembers []spec.Member
 	if route.Action == string(Page) {
 		for i := range respType.Members {
 			m := respType.Members[i]
 			if m.Name == "List" {
 				respItemTypeName = m.Type.Name()[2:]
+				respItemMembers = typesMap[respItemTypeName].Members
 				break
 			}
 		}
@@ -137,7 +139,8 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 			"reqMembers":                reqType.Members,
 			"respMembers":               respType.Members,
 			"resp":                      "&" + gogen.TypesPacket + "." + respType.Name(),
-			"respItemTypeName":          respItemTypeName,
+			"respItemTypeName":          respItemTypeName, // 分页时，返回的数据类型的名称
+			"respItemMembers":           respItemMembers,  // 分页时，返回的数据类型的字段
 			"lowerStartCamelPrimaryKey": util.EscapeGolangKeyword(stringx.From(stringx.From(tableInfo.PrimaryKey.Name).ToCamel()).Untitle()),
 			"primaryKey":                util.EscapeGolangKeyword(stringx.From(tableInfo.PrimaryKey.Name).ToCamel()),
 		},
