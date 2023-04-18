@@ -78,17 +78,6 @@ func replaceGroup(group *spec.Group, apiSpec *spec.ApiSpec) *spec.ApiSpec {
 	return apiSpec
 }
 
-var mapJsonTag = func(name string, comment string) string {
-	return fmt.Sprintf("`label:\"%s\" json:\"%s\"`", comment, strcase.ToLowerCamel(name))
-}
-
-var mapFormTag = func(name string, comment string) string {
-	return fmt.Sprintf("`label:\"%s\" form:\"%s\"`", comment, strcase.ToLowerCamel(name))
-}
-var mapFormTagWithValid = func(name string, comment string, valid string) string {
-	return fmt.Sprintf("`label:\"%s\" validate:\"%s\" form:\"%s\"`", comment, valid, strcase.ToLowerCamel(name))
-}
-
 func buildApiAndType(prefix string, desc string, t *model.Table, apiSpec *spec.ApiSpec) func(
 	action tpl.Action, chinesAction, method string,
 	reqMember, respMember memberProvider) (spec.Route, *spec.ApiSpec, error) {
@@ -259,21 +248,6 @@ func mapColToMember(t *model.Table, mapTag func(name string, comment string) str
 		})
 	}
 	return members, &table.PrimaryKey, nil
-}
-
-func maptype(dataType string) string {
-	switch dataType {
-	case "time.Time", "sql.NullTime", "sql.NullString":
-		return "string"
-	case "sql.NullInt64":
-		return "int64"
-	case "sql.NullFloat64":
-		return "float64"
-	case "sql.NullBool":
-		return "bool"
-	default:
-		return dataType
-	}
 }
 
 func buildRoute(prefix string, method string, action string, reqType spec.DefineStruct, respType spec.DefineStruct, desc string) spec.Route {
