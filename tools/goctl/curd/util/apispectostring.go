@@ -132,7 +132,10 @@ func writeStruct(sb *strings.Builder, defineStruct spec.DefineStruct) {
 	for i := range defineStruct.Members {
 		member := defineStruct.Members[i]
 		writeDoc(sb, member.Docs)
-		sb.WriteString(fmt.Sprintf("\t\t%s %s %s %s", member.Name, member.Type.Name(), member.Tag, member.Comment))
+		sb.WriteString(fmt.Sprintf("\t\t%s %s %s", member.Name, member.Type.Name(), member.Tag))
+		if member.Comment != "" {
+			sb.WriteString("//" + member.Comment)
+		}
 		sb.WriteString("\n")
 	}
 	sb.WriteString("\t}\n")

@@ -240,7 +240,8 @@ func mapColToMember(t *model.Table, mapTag func(name string, comment string) str
 			Type: spec.PrimitiveType{
 				RawName: maptype(field.DataType),
 			},
-			Tag: mapTag(field.Name.Source(), field.Comment),
+			Comment: field.Comment,
+			Tag:     mapTag(field.Name.Source(), field.Comment),
 		})
 	}
 	return members, &table.PrimaryKey, nil
