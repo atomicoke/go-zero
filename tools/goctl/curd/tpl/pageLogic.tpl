@@ -35,7 +35,7 @@ func (l *{{.logic}}) sql({{.request}}) *sbuilder.Page {
     	f = m.Fields()
     )
     return sbuilder.BuildPage("",m){{- range .reqMembers }}{{ if eq .Name "Page"}}{{ else if eq .Name "Limit"}}{{else}}.
-    Eq(f.{{.Name}}, req.{{.Name}}){{end}}{{- end }}
+    EqOn(req.{{.Name}} {{ OnCond .Name }} , f.{{.Name}}, req.{{.Name}}){{end}}{{- end }}
 }
 
 const orderBy = "{{.lowerStartCamelPrimaryKey}} DESC"

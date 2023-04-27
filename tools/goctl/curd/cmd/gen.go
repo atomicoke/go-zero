@@ -176,6 +176,12 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 		}
 		return false
 	}
+	isFloat64 := func(colName string) bool {
+		if col, ok := colMap[colName]; ok {
+			return col.DataType == "float" || col.DataType == "double" || strings.Contains(col.DataType, "decimal")
+		}
+		return false
+	}
 	isNull := func(colName string) bool {
 		if col, ok := colMap[colName]; ok {
 			return col.IsNullAble == "YES"
@@ -246,6 +252,12 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 					return false
 				}
 				return isNull(colName) && isInt64(colName)
+			},
+			"OnCond": func(colName string) string {
+				if isInt64(colName) || isFloat64(colName) {
+					return " != 0"
+				}
+				return " != \"\""
 			},
 		},
 	})
