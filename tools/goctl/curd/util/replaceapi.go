@@ -11,7 +11,6 @@ import (
 	"github.com/zeromicro/go-zero/tools/goctl/curd/tpl"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/model"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/parser"
-	utilformat "github.com/zeromicro/go-zero/tools/goctl/util/format"
 	"github.com/zeromicro/go-zero/tools/goctl/util/stringx"
 	"strings"
 )
@@ -30,10 +29,7 @@ func ReplaceApi(apiSpec *spec.ApiSpec, cfg *config.Config, table *model.Table) (
 		prefix = table.Table
 	}
 	desc = strings.Trim(apiSpec.Info.Properties["desc"], "\"")
-	prefix, err := utilformat.FileNamingFormat(cfg.NamingFormat, prefix)
-	if err != nil {
-		return nil, err
-	}
+	prefix = strcase.ToCamel(prefix)
 
 	group := findServiceGroup(apiSpec)
 	builder := buildApiAndType(prefix, desc, table, apiSpec)
@@ -251,10 +247,11 @@ func mapColToMember(t *model.Table, mapTag func(name string, comment string) str
 }
 
 func buildRoute(prefix string, method string, action string, reqType spec.DefineStruct, respType spec.DefineStruct, desc string) spec.Route {
+	prefix = strcase.ToCamel(prefix)
 	route := spec.Route{
 		Method:       method,
 		Path:         "/" + action,
-		Handler:      stringx.From(action).Title() + stringx.From(prefix).Title() + "Handler",
+		Handler:      stringx.From(action).Title() + prefix + "Handler",
 		AtDoc:        spec.AtDoc{Text: "\"" + desc + "\""},
 		RequestType:  reqType,
 		ResponseType: respType,
