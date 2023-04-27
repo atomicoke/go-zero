@@ -2,8 +2,19 @@
 syntax = "v1"
 
 info(
-    curdPrefix: "QerCommon" // 生成的CURD代码前缀
+    title: "靓号"
+	desc: "靓号相关接口"
+    curdPrefix: "QerCommon" // 生成的CURD代码前缀 可选
 )
+
+@server (
+	jwt: JwtAuth
+	group: users
+	prefix: /admin/users/code
+	middleware: PermMenuAuth
+	curd: true
+)
+service  admin-api {}
 ```
 
 ```txt
