@@ -55,8 +55,16 @@ func pageReqMembers(members []spec.Member, pk *parser.Primary) []spec.Member {
 	})
 
 	for i := range members {
-		members[i].Tag = mapFormOptionTag(members[i].Name, members[i].Comment)
-		m = append(m, members[i])
+		member := members[i]
+		m2 := spec.Member{
+			Name:     member.Name,
+			Type:     member.Type,
+			Tag:      mapFormOptionTag(member.Name, member.Comment),
+			Comment:  member.Comment,
+			Docs:     member.Docs,
+			IsInline: member.IsInline,
+		}
+		m = append(m, m2)
 	}
 	return m
 }
