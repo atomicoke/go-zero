@@ -2,11 +2,11 @@ package {{.pkgName}}
 
 import (
     "{{.importModel}}"
-    "dm-admin/common/sbuilder"
     "dm-admin/common/errorx"
+    {{ if HasTime .reqMembers}}
     "dm-admin/common/globalkey"
     "dm.com/toolx/mp"
-    "github.com/Masterminds/squirrel"
+    {{ end }}
 
 	{{.imports}}
 )

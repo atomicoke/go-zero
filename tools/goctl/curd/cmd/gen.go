@@ -259,6 +259,14 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 				}
 				return " != \"\""
 			},
+			"HasTime": func(members []spec.Member) bool {
+				for _, m := range members {
+					if isTime(m.Name) {
+						return true
+					}
+				}
+				return false
+			},
 		},
 	})
 }
