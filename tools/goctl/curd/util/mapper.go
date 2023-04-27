@@ -9,7 +9,7 @@ func maptype(dataType string) string {
 	switch dataType {
 	case "time.Time", "sql.NullTime", "sql.NullString":
 		return "string"
-	case "sql.NullInt64":
+	case "sql.NullInt64", "sql.NullInt32", "sql.NullInt16", "sql.NullInt8", "uint64", "uint32", "uint16", "uint8":
 		return "int64"
 	case "sql.NullFloat64":
 		return "float64"

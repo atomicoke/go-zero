@@ -86,7 +86,7 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 		return err
 	}
 	logx.Must(genModel(dir, cfg, table, tableInfo))
-	logx.Must(genTypes(dir, cfg, apiSpec, tableInfo.Table))
+	//logx.Must(genTypes(dir, cfg, apiSpec, tableInfo.Table))
 	logx.Must(gogen.GenHandlers(dir, rootPkg, cfg, apiSpec))
 	logx.Must(genLogic(dir, rootPkg, cfg, apiSpec, table, tableInfo))
 	logx.Must(os.WriteFile(apiFile, []byte(curdutil.ApiSpecToString(apiSpec)), 0666))
