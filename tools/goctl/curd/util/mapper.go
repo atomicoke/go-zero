@@ -27,6 +27,10 @@ var mapJsonTag = func(name string, comment string) string {
 var mapFormTag = func(name string, comment string) string {
 	return fmt.Sprintf("`label:\"%s\" form:\"%s\"`", comment, strcase.ToLowerCamel(name))
 }
+
+var mapFormOptionTag = func(name string, comment string) string {
+	return fmt.Sprintf("`label:\"%s\" form:\"%s,optional\"`", comment, strcase.ToLowerCamel(name))
+}
 var mapFormTagWithValid = func(name string, comment string, valid string) string {
 	return fmt.Sprintf("`label:\"%s\" validate:\"%s\" form:\"%s\"`", comment, valid, strcase.ToLowerCamel(name))
 }

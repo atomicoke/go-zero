@@ -41,7 +41,7 @@ func emptyMembers(members []spec.Member, pk *parser.Primary) []spec.Member {
 }
 
 func pageReqMembers(members []spec.Member, pk *parser.Primary) []spec.Member {
-	return append([]spec.Member{
+	m := append([]spec.Member{
 		{
 			Name: "Page",
 			Type: spec.PrimitiveType{RawName: "int64"},
@@ -52,7 +52,13 @@ func pageReqMembers(members []spec.Member, pk *parser.Primary) []spec.Member {
 			Type: spec.PrimitiveType{RawName: "int64"},
 			Tag:  mapFormTagWithValid("limit", "每页数量", "number,gte=1,lte=100"),
 		},
-	}, members...)
+	})
+
+	for i := range members {
+		members[i].Tag = mapFormOptionTag(members[i].Name, members[i].Comment)
+		m = append(m, members[i])
+	}
+	return m
 }
 
 func pageRespItemsMembers(members []spec.Member, pk *parser.Primary) []spec.Member {
