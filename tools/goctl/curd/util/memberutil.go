@@ -12,7 +12,7 @@ func memberPk(members []spec.Member, pk *parser.Primary) []spec.Member {
 	return []spec.Member{
 		{
 			Name: pk.Name.Title(),
-			Type: spec.PrimitiveType{RawName: pk.DataType},
+			Type: spec.PrimitiveType{RawName: maptype(pk.DataType)},
 			Tag:  mapJsonTag(pk.Name.Source(), pk.Comment),
 		},
 	}
@@ -22,7 +22,7 @@ func memberPkGet(members []spec.Member, pk *parser.Primary) []spec.Member {
 	return []spec.Member{
 		{
 			Name: pk.Name.Title(),
-			Type: spec.PrimitiveType{RawName: pk.DataType},
+			Type: spec.PrimitiveType{RawName: maptype(pk.DataType)},
 			Tag:  mapFormTag(pk.Name.Source(), pk.Comment),
 		},
 	}
