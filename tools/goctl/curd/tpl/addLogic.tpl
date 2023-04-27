@@ -32,7 +32,7 @@ func (l *{{.logic}}) model() model.{{.modelName}} {
 // build model.{{.modelName}}
 func (l *{{.logic}}) buildEntity({{.request}}) *model.{{.entityName}} {
     return &model.{{.entityName}}{ {{- range .reqMembers }}
-        {{ if IsNullTime .Name }} {{.Name}}: mp.StringToNullTime(req.{{.Name}},globalkey.SysDateFormat), {{ else if IsTime .Name }} {{.Name}}: mp.StringToTime(req.{{.Name}},globalkey.SysDateFormat),{{else}} {{.Name}}: req.{{.Name}},{{end}}
+        {{ if IsNullTime .Name }} {{.Name}}: mp.StringToNullTime(req.{{.Name}},globalkey.SysDateFormat), {{ else if IsTime .Name }} {{.Name}}: mp.StringToTime(req.{{.Name}},globalkey.SysDateFormat),{{ else if IsNullInt64 .Name}} {{.Name}}: mp.Int64ToNull(req.{{.Name}}),{{else}} {{.Name}}: req.{{.Name}},{{end}}
    {{- end }}
     }
 }

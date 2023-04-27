@@ -181,6 +181,12 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 		}
 		return false
 	}
+	hasDefault := func(colName string) bool {
+		if col, ok := colMap[colName]; ok {
+			return col.ColumnDefault != nil
+		}
+		return false
+	}
 
 	respItemTypeName := ""
 	var respItemMembers []spec.Member
@@ -229,10 +235,16 @@ func genLogicByRoute(dir, rootPkg string, cfg *config.Config, group spec.Group, 
 			"IsTime": isTime,
 			"IsNull": isNull,
 			"IsNullTime": func(colName string) bool {
+				if hasDefault(colName) {
+					return false
+				}
 				return isTime(colName) && isNull(colName)
 			},
 			"IsNullInt64": func(colName string) bool {
-				return isInt64(colName) && isNull(colName)
+				if hasDefault(colName) {
+					return false
+				}
+				return isNull(colName) && isInt64(colName)
 			},
 		},
 	})

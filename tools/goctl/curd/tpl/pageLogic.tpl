@@ -64,7 +64,11 @@ func mapList(list []*model.{{.entityName}}) []types.{{.respItemTypeName}} {
     for _, item := range list {
         v := types.{{.respItemTypeName}}{ {{ range .respItemMembers }}
 				{{.Name}}:
-                    {{ if IsNullTime .Name}} mp.NullTimeToString(item.{{.Name}},globalkey.SysDateFormat),{{ else if IsTime .Name }} mp.TimeToString(item.{{.Name}},globalkey.SysDateFormat),{{else if IsNullInt64 .Name}}{{.Name}}: entity.{{.Name}}.Int64,{{else}}item.{{.Name}},{{end}}
+				{{ if IsNullTime .Name}}
+				    mp.NullTimeToString(item.{{.Name}},globalkey.SysDateFormat),
+				{{ else if IsTime .Name }} mp.TimeToString(item.{{.Name}},globalkey.SysDateFormat),
+				{{ else if IsNullInt64 .Name }} item.{{.Name}}.Int64,
+				{{ else }}item.{{.Name}},{{end}}
 			{{- end}}
         }
         resp = append(resp, v)
