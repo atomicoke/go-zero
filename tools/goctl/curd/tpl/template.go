@@ -72,3 +72,13 @@ const (
 	Page   Action = "page"
 	Get    Action = "get"
 )
+
+var (
+	ActionMap = map[string]bool{
+		string(Add):    true,
+		string(Update): true,
+		string(Delete): true,
+		string(Get):    true,
+		string(Page):   true,
+	}
+)
