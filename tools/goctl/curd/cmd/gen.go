@@ -93,6 +93,16 @@ func doGenCrud(apiFile, dir, url, table, namingStyle string) error {
 	return nil
 }
 
+var (
+	actionMap = map[string]bool{
+		string(tpl.Add):    true,
+		string(tpl.Update): true,
+		string(tpl.Delete): true,
+		string(tpl.Get):    true,
+		string(tpl.Page):   true,
+	}
+)
+
 func genLogic(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec, tableName string, tableInfo *model.Table) error {
 	modelName := strcase.ToCamel(tableName + "Model")
 	entityName := strcase.ToCamel(tableName)
@@ -105,12 +115,13 @@ func genLogic(dir, rootPkg string, cfg *config.Config, api *spec.ApiSpec, tableN
 		}
 
 		for _, r := range g.Routes {
-			if !r.Curd {
-				continue
-			}
-			err := genLogicByRoute(dir, rootPkg, cfg, g, r, modelName, entityName, typesMap, tableInfo)
-			if err != nil {
-				return err
+			action := strings.TrimPrefix(r.Path, "/")
+			if r.Curd || actionMap[action] {
+				r.Action = action
+				err := genLogicByRoute(dir, rootPkg, cfg, g, r, modelName, entityName, typesMap, tableInfo)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
