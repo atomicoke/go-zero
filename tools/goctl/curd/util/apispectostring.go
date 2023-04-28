@@ -133,8 +133,10 @@ func writeStruct(sb *strings.Builder, defineStruct spec.DefineStruct) {
 		member := defineStruct.Members[i]
 		writeDoc(sb, member.Docs)
 		sb.WriteString(fmt.Sprintf("\t\t%s %s %s", member.Name, member.Type.Name(), member.Tag))
-		if member.Comment != "" {
-			sb.WriteString("//" + member.Comment)
+		if member.Comment != "" && !strings.Contains(member.Comment, "//") {
+			sb.WriteString("// " + member.Comment)
+		} else {
+			sb.WriteString(member.Comment)
 		}
 		sb.WriteString("\n")
 	}

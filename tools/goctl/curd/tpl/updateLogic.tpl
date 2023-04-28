@@ -32,9 +32,13 @@ func (l *{{.logic}}) sql({{.request}}) *sbuilder.UpdateSql {
     	m = l.model()
     	f = m.Fields()
     )
-    return sbuilder.Update(m){{- range .reqMembers }}.
-       Eq(f.{{.Name}}, req.{{.Name}})
-   {{- end }}
+    sb := sbuilder.Update(m){{- range .reqMembers }}.
+                 Eq(f.{{.Name}}, req.{{.Name}})
+             {{- end }}
+    sb{{- range .reqMembers }}.
+        Set(f.{{.Name}}, req.{{.Name}})
+    {{- end }}
+    return sb
 }
 
 /*
