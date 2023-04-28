@@ -3,7 +3,7 @@ package {{.pkgName}}
 import (
     "{{.importModel}}"
     "dm-admin/common/errorx"
-    "dm-admin/common/sbuilder"
+    "dm.com/toolx/sqlbuilder"
 
 	{{.imports}}
 )
@@ -27,12 +27,12 @@ func (l *{{.logic}}) model() model.{{.modelName}} {
 }
 
 // update sql builder
-func (l *{{.logic}}) sql({{.request}}) *sbuilder.UpdateSql {
+func (l *{{.logic}}) sql({{.request}}) *sqlbuilder.UpdateSql {
     var (
     	m = l.model()
     	f = m.Fields()
     )
-    sb := sbuilder.Update(m){{- range .reqMembers }}.
+    sb := sqlbuilder.Update(m){{- range .reqMembers }}.
                  Eq(f.{{.Name}}, req.{{.Name}})
              {{- end }}
     sb{{- range .reqMembers }}.
