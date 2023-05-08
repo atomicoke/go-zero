@@ -253,7 +253,7 @@ func buildRoute(prefix string, method string, action string, reqType spec.Define
 		Method:       method,
 		Path:         "/" + action,
 		Handler:      stringx.From(action).Title() + prefix + "Handler",
-		AtDoc:        spec.AtDoc{Text: "\"" + desc + "\""},
+		AtDoc:        spec.AtDoc{Properties: map[string]string{"summary": "\"" + desc + "\""}},
 		RequestType:  reqType,
 		ResponseType: respType,
 		Curd:         true,
