@@ -6,7 +6,7 @@ import (
 )
 
 // BuildVersion is the version of goctl.
-const BuildVersion = "1.5.2"
+const BuildVersion = "1.5.3"
 
 var BuildTime = ""
 

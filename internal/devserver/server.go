@@ -7,9 +7,9 @@ import (
 	"net/http/pprof"
 	"sync"
 
-	"github.com/felixge/fgprof"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/prometheus"
 	"github.com/zeromicro/go-zero/core/threading"
 	"github.com/zeromicro/go-zero/internal/health"
 )
@@ -42,11 +42,12 @@ func (s *Server) addRoutes() {
 
 	// metrics
 	if s.config.EnableMetrics {
+		// enable prometheus global switch
+		prometheus.Enable()
 		s.handleFunc(s.config.MetricsPath, promhttp.Handler().ServeHTTP)
 	}
 	// pprof
 	if s.config.EnablePprof {
-		s.handleFunc("/debug/fgprof", fgprof.Handler().(http.HandlerFunc))
 		s.handleFunc("/debug/pprof/", pprof.Index)
 		s.handleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 		s.handleFunc("/debug/pprof/profile", pprof.Profile)
